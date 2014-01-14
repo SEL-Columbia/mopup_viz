@@ -16,7 +16,7 @@ nga_shp <- readShapeSpatial("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleanin
 facilities <- readRDS("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/nmis/Normalized/Education_774_NMIS_Facility.rds")
 facilities$lat <- as.numeric(lapply(str_split(facilities$gps, " "), function(x) x[1]))
 facilities$long <- as.numeric(lapply(str_split(facilities$gps, " "), function(x) x[2]))
-
+# facilities <- facilities[1:60,]
 
 # # current lga data subsetting
 # current_shp <- subset(nga_shp, lga_id == "2")
@@ -100,8 +100,9 @@ getting_zoomin_graph <- function(current_bbox_df,
 }
 
 # Creating master function to plot lga overview + zoomin level all at once
-lga_viz <- function(current_shp_fortify, current_facilities){
+lga_viz <- function(current_shp, current_facilities){
   
+  current_shp_fortify <- fortify(current_shp, region="Name")
   grid_lines <- get_grids(current_shp, 3, 3)
   bbox_data <- get_grid_zoomin_bbox(grid_lines$x, grid_lines$y)
   
@@ -115,15 +116,14 @@ lga_viz <- function(current_shp_fortify, current_facilities){
 
 
 # single lga level 
-lga_viz(current_shp_fortify, current_facilities)
+# lga_viz(current_shp_fortify, current_facilities)
 
 ### The BIG Loop
 pdf("./all_lgas.pdf")
 
 d_ply(facilities, .(lga_id), function(df){
   current_shp <- subset(nga_shp, lga_id == df$lga_id[1])
-  current_shp_fortify <- fortify(current_shp, region="Name")
-  lga_viz(current_shp_fortify, df)
+  lga_viz(current_shp, df)
 })
 
 dev.off()
