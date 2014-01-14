@@ -18,10 +18,10 @@ facilities$lat <- as.numeric(lapply(str_split(facilities$gps, " "), function(x) 
 facilities$long <- as.numeric(lapply(str_split(facilities$gps, " "), function(x) x[2]))
 
 
-# current lga data subsetting
-current_shp <- subset(nga_shp, lga_id == "2")
-current_shp_fortify <- fortify(current_shp, region="Name")
-current_facilities <- subset(facilities, lga_id == "2")
+# # current lga data subsetting
+# current_shp <- subset(nga_shp, lga_id == "2")
+# current_shp_fortify <- fortify(current_shp, region="Name")
+# current_facilities <- subset(facilities, lga_id == "2")
 
 
 
@@ -113,4 +113,17 @@ lga_viz <- function(current_shp_fortify, current_facilities){
   
 }
 
+
+# single lga level 
 lga_viz(current_shp_fortify, current_facilities)
+
+### The BIG Loop
+pdf("./all_lgas.pdf")
+
+d_ply(facilities, .(lga_id), function(df){
+  current_shp <- subset(nga_shp, lga_id == df$lga_id[1])
+  current_shp_fortify <- fortify(current_shp, region="Name")
+  lga_viz(current_shp_fortify, df)
+})
+
+dev.off()
