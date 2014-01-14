@@ -50,6 +50,7 @@ bbox_data <- get_grid_zoomin_bbox(grid_x, grid_y)
 
 
 lga_name <- current_shp_fortify$id[1]
+
 # Plotting lga level
 ggplot(current_shp_fortify, aes(x=long, y=lat)) +
   geom_polygon(alpha=0.2) +
@@ -76,45 +77,6 @@ getting_zoomin_graph <- function(current_bbox_df){
     coord_map(xlim=c(current_bbox_df$x_min, current_bbox_df$x_max),
               ylim=c(current_bbox_df$y_min, current_bbox_df$y_max)) +   
     labs(title = paste('Map of Area', current_bbox_df$word, sep=' '))
-  print(plot)
-}
-
-d_ply(bbox_data, .(word), function(df) getting_zoomin_graph(df))
-
-
-
-
-
-
-# current_bbox_df <- bbox_data[1,]
-# # zoom-in view
-# ggplot(current_shp_fortify, aes(x=long, y=lat)) +
-#   geom_polygon(alpha=0.2) +
-#   geom_path(color="red") +
-#   geom_point(data=current_facilities, aes(x=long, y=lat), color='black', size=1) + 
-#   geom_vline(xintercept = grid_x) + 
-#   geom_hline(yintercept = grid_y) +
-#   coord_equal() +
-#   theme(panel.grid=element_blank(),
-#         panel.background = element_blank()) +
-# 
-#   coord_map(xlim=c(current_bbox_df$x_min, current_bbox_df$x_max),
-#             ylim=c(current_bbox_df$y_min, current_bbox_df$y_max)) +   
-#   labs(title = paste('Map of Area', current_bbox_df$word, sep=' '))
-
-getting_zoomin_graph <- function(current_bbox_df){
-  plot <- ggplot(current_shp_fortify, aes(x=long, y=lat)) +
-          geom_polygon(alpha=0.2) +
-          geom_path(color="red") +
-          geom_point(data=current_facilities, aes(x=long, y=lat), color='black', size=1) + 
-          geom_vline(xintercept = grid_x) + 
-          geom_hline(yintercept = grid_y) +
-          coord_equal() +
-          theme(panel.grid=element_blank(),
-                panel.background = element_blank()) +
-          coord_map(xlim=c(current_bbox_df$x_min, current_bbox_df$x_max),
-                    ylim=c(current_bbox_df$y_min, current_bbox_df$y_max)) +   
-          labs(title = paste('Map of Area', current_bbox_df$word, sep=' '))
   print(plot)
 }
 
