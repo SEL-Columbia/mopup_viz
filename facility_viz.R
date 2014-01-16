@@ -70,9 +70,9 @@ get_grid_zoomin_bbox <- function(grid_df){
 # }                                     
 
 # download ZOOM IN map img from osm
-get_zoomin_map <- function(current_bbox_df){
+get_osm_map <- function(current_bbox_df){
     
-    n <- nrow(current_bbox_df)
+    n <- dim(current_bbox_df)[1]
     map <- openmap(upperLeft=c(lat = current_bbox_df$y_max[n], 
                                lon=current_bbox_df$x_min[1]), 
                    lowerRight=c(lat = current_bbox_df$y_min[1], 
@@ -82,90 +82,184 @@ get_zoomin_map <- function(current_bbox_df){
     return(map)
 }                                     
 
-
 # Plotting lga level
 getting_lga_graph <- function(current_shp_fortify, current_facilities, 
-                              osm_map, bbox_data, grid_lines){
+                              bbox_data, grid_lines){
     
     lga_name <- current_shp_fortify$id[1]
-
+    osm_map <- get_osm_map(bbox_data)
+        
     plot <- autoplot(osm_map, expand=F) + 
-          geom_point(data=current_facilities, 
+        geom_point(data=current_facilities, 
                    aes(x=long, y=lat), 
-                     color=I('red'), size=5, shape='+') + 
-          geom_polygon(data=current_shp_fortify, 
-                       aes(x=long, y=lat, group=group), 
-                       fill='black', color='black', alpha=0.05) + 
-          geom_vline(xintercept = grid_lines$x) + 
-          geom_hline(yintercept = grid_lines$y) +
-          geom_text(data=bbox_data, 
-                    aes(x=x_center, y=y_center, label=word),
-                    size=11, color='blue', alpha=0.4) + 
-          coord_equal() + 
-          theme(panel.grid=element_blank(),
-                panel.background = element_blank()) + 
-          labs(title = paste('Map of', lga_name,sep=' ')) + 
-          xlab("Longitude") + ylab("Latitude")
-  print(plot)
+                   color=I('red'), size=5, shape='+') + 
+        geom_polygon(data=current_shp_fortify, 
+                     aes(x=long, y=lat, group=group), 
+                     fill='black', color='black', alpha=0.05) + 
+        geom_vline(xintercept = grid_lines$x) + 
+        geom_hline(yintercept = grid_lines$y) +
+        geom_text(data=bbox_data, 
+                  aes(x=x_center, y=y_center, label=word),
+                  size=11, color='blue', alpha=0.4) + 
+        coord_equal() + 
+        theme(panel.grid=element_blank(),
+              panel.background = element_blank()) + 
+        labs(title = paste('Map of', lga_name,sep=' ')) + 
+        xlab("Longitude") + ylab("Latitude")
+    print(plot)
 }
 
 # Plotting area zoom in level
 getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify, 
-                                 current_facilities, osm_map, grid_lines){
-  
-  plot <-   autoplot(osm_map, expand=F) + 
-            geom_polygon(data=current_shp_fortify, 
-                        aes(x=long, y=lat, group=group), 
-                        fill='black', color='black', alpha=0.05) + 
-            geom_point(data=current_facilities, 
-                       aes(x=long, y=lat), 
-                       color=I('red'), size=5, shape='+') + 
-            geom_vline(xintercept = grid_lines$x) + 
-            geom_hline(yintercept = grid_lines$y) +
-            coord_equal() +
-            theme(panel.grid=element_blank(),
-                  panel.background = element_blank()) +
-            coord_cartesian(xlim=c(current_bbox_df$x_min, 
-                                 current_bbox_df$x_max),
-                            ylim=c(current_bbox_df$y_min, 
-                                 current_bbox_df$y_max)) +   
-            labs(title = paste('Map of Area', 
-                               current_bbox_df$word, sep=' ')) +
-            xlab("Longitude") + ylab("Latitude")
-  print(plot)
+                                 current_facilities, grid_lines){
+    
+    osm_map <- get_osm_map(current_bbox_df)
+
+    plot <- autoplot(osm_map, expand=F) + 
+        geom_polygon(data=current_shp_fortify, 
+                     aes(x=long, y=lat, group=group), 
+                     fill='black', color='black', alpha=0.05) + 
+        geom_point(data=current_facilities, 
+                   aes(x=long, y=lat), 
+                   color=I('red'), size=5, shape='+') + 
+        geom_vline(xintercept = grid_lines$x) + 
+        geom_hline(yintercept = grid_lines$y) +
+        coord_equal() +
+        theme(panel.grid=element_blank(),
+              panel.background = element_blank()) +
+        coord_cartesian(xlim=c(current_bbox_df$x_min, 
+                               current_bbox_df$x_max),
+                        ylim=c(current_bbox_df$y_min, 
+                               current_bbox_df$y_max)) +   
+        labs(title = paste('Map of Area', 
+                           current_bbox_df$word, sep=' ')) +
+        xlab("Longitude") + ylab("Latitude")
+    print(plot)
 }
 
 # Creating master function to plot lga overview + zoomin level all at once
 lga_viz <- function(current_shp, current_facilities){
-  
-  current_shp_fortify <- fortify(current_shp, region="Name")
-  osm_map <- get_osm_map(current_shp)
-  grid_lines <- get_grids(current_shp, 3, 3)
-  bbox_data <- get_grid_zoomin_bbox(grid_lines)
-  
-  getting_lga_graph(current_shp_fortify, current_facilities,
-                    osm_map, bbox_data, grid_lines)
-  
-  d_ply(bbox_data, .(word), function(df) getting_zoomin_graph(df, current_shp_fortify,
-                                          current_facilities, osm_map, grid_lines))
-  
+    
+    current_shp_fortify <- fortify(current_shp, region="Name")
+    grid_lines <- get_grids(current_shp, 3, 3)
+    bbox_data <- get_grid_zoomin_bbox(grid_lines)
+    
+    getting_lga_graph(current_shp_fortify, current_facilities,
+                      bbox_data, grid_lines)
+    
+    d_ply(bbox_data, .(word), function(df) getting_zoomin_graph(df, current_shp_fortify,
+                                                                current_facilities, grid_lines))
+    
 }
 
 
+# Below chunk is for testing only
+# grid_lines <- get_grids(current_shp, 3, 3)
+# bbox_data <- get_grid_zoomin_bbox(grid_lines)
+# lga_name <- current_shp_fortify$id[1]
+# 
+# current_bbox_df <- subset(bbox_data, word == "1")
+# 
+# getting_zoomin_graph(current_bbox_df, current_shp_fortify,
+#                      current_facilities, grid_lines)
+# 
+# getting_lga_graph(current_shp_fortify, current_facilities, bbox_data, grid_lines)
+# # single lga level 
 
-
-grid_lines <- get_grids(current_shp, 3, 3)
-bbox_data <- get_grid_zoomin_bbox(grid_lines)
-lga_name <- current_shp_fortify$id[1]
-
-current_bbox_df <- subset(bbox_data, word == "1")
-
-getting_zoomin_graph(df, current_shp_fortify,
-                     current_facilities, osm_map, grid_lines)
-
-getting_lga_graph(current_shp_fortify, current_facilities, osm_map, bbox_data, grid_lines)
-# single lga level 
+pdf("./lga1.pdf")
 lga_viz(current_shp, current_facilities)
+dev.off()
+
+
+
+
+# # Plotting lga level
+# getting_lga_graph <- function(current_shp_fortify, current_facilities, 
+#                               osm_map, bbox_data, grid_lines){
+#     
+#     lga_name <- current_shp_fortify$id[1]
+#     osm_map <- get_osm_map(current_shp)
+#     
+# 
+#     plot <- autoplot(osm_map, expand=F) + 
+#           geom_point(data=current_facilities, 
+#                    aes(x=long, y=lat), 
+#                      color=I('red'), size=5, shape='+') + 
+#           geom_polygon(data=current_shp_fortify, 
+#                        aes(x=long, y=lat, group=group), 
+#                        fill='black', color='black', alpha=0.05) + 
+#           geom_vline(xintercept = grid_lines$x) + 
+#           geom_hline(yintercept = grid_lines$y) +
+#           geom_text(data=bbox_data, 
+#                     aes(x=x_center, y=y_center, label=word),
+#                     size=11, color='blue', alpha=0.4) + 
+#           coord_equal() + 
+#           theme(panel.grid=element_blank(),
+#                 panel.background = element_blank()) + 
+#           labs(title = paste('Map of', lga_name,sep=' ')) + 
+#           xlab("Longitude") + ylab("Latitude")
+#   print(plot)
+# }
+# 
+# # Plotting area zoom in level
+# getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify, 
+#                                  current_facilities, osm_map, grid_lines){
+#   
+#   plot <-   autoplot(osm_map, expand=F) + 
+#             geom_polygon(data=current_shp_fortify, 
+#                         aes(x=long, y=lat, group=group), 
+#                         fill='black', color='black', alpha=0.05) + 
+#             geom_point(data=current_facilities, 
+#                        aes(x=long, y=lat), 
+#                        color=I('red'), size=5, shape='+') + 
+#             geom_vline(xintercept = grid_lines$x) + 
+#             geom_hline(yintercept = grid_lines$y) +
+#             coord_equal() +
+#             theme(panel.grid=element_blank(),
+#                   panel.background = element_blank()) +
+#             coord_cartesian(xlim=c(current_bbox_df$x_min, 
+#                                  current_bbox_df$x_max),
+#                             ylim=c(current_bbox_df$y_min, 
+#                                  current_bbox_df$y_max)) +   
+#             labs(title = paste('Map of Area', 
+#                                current_bbox_df$word, sep=' ')) +
+#             xlab("Longitude") + ylab("Latitude")
+#   print(plot)
+# }
+# 
+# # Creating master function to plot lga overview + zoomin level all at once
+# lga_viz <- function(current_shp, current_facilities){
+#   
+#   current_shp_fortify <- fortify(current_shp, region="Name")
+#   osm_map <- get_osm_map(current_shp)
+#   grid_lines <- get_grids(current_shp, 3, 3)
+#   bbox_data <- get_grid_zoomin_bbox(grid_lines)
+#   
+#   getting_lga_graph(current_shp_fortify, current_facilities,
+#                     osm_map, bbox_data, grid_lines)
+#   
+#   d_ply(bbox_data, .(word), function(df) getting_zoomin_graph(df, current_shp_fortify,
+#                                           current_facilities, osm_map, grid_lines))
+#   
+# }
+
+# lga_viz <- function(current_shp, current_facilities){
+#     
+#     current_shp_fortify <- fortify(current_shp, region="Name")
+#     osm_map <- get_osm_map(current_shp)
+#     grid_lines <- get_grids(current_shp, 3, 3)
+#     bbox_data <- get_grid_zoomin_bbox(grid_lines)
+#     
+#     getting_lga_graph(current_shp_fortify, current_facilities,
+#                       osm_map, bbox_data, grid_lines)
+#     
+#     d_ply(bbox_data, .(word), function(df) getting_zoomin_graph(df, current_shp_fortify,
+#                                                                 current_facilities, osm_map, grid_lines))
+#     
+# }
+
+
+
 
 ### The BIG Loop
 # pdf("./all_lgas.pdf")
