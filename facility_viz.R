@@ -101,7 +101,8 @@ facility_subset_griddf <- function(current_bbox_df, current_facilities_seriel_ad
                                                "uuid"))
     current_facilities_seriel_added$map <- rep(map_num, nrow(current_facilities_seriel_added))
     if (nrow(current_facilities_seriel_added) > 0){
-        grid.table(current_facilities_seriel_added)    
+        grid.newpage()
+        grid.table(current_facilities_seriel_added, show.rownames = FALSE)    
     }
     
 }
@@ -130,7 +131,7 @@ getting_lga_graph <- function(current_shp_fortify, current_facilities,
               panel.background = element_blank()) + 
         labs(title = paste('Map of', lga_name,sep=' ')) + 
         xlab("Longitude") + ylab("Latitude")
-    print(plot)
+    print(plot, width = 7, height = 7)
 }
 
 # Plotting area zoom in level
@@ -150,7 +151,7 @@ getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify,
         geom_hline(yintercept = grid_lines$y) +
         geom_text(data=current_facilities, 
                   aes(x=long, y=lat, label=seriel_ID),
-                  color='black', size=3, vjust=-2) + 
+                  color='black', size=3, vjust=0) + 
         coord_equal() +
         theme(panel.grid=element_blank(),
               panel.background = element_blank()) +
@@ -198,8 +199,8 @@ getting_zoomin_graph(current_bbox_df, current_shp_fortify,
 
 # single lga level 
 
-pdf("./lga1.pdf", width = 7, height = 7)
-lga_viz(current_shp, current_facilities)
+pdf("./lga1.pdf", width = 15, height = 10)
+    lga_viz(current_shp, current_facilities)
 dev.off()
 
 
