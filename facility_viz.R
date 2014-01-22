@@ -7,6 +7,8 @@ require(rgeos)
 require(ggmap)
 require(RgoogleMaps)
 require(OpenStreetMap)
+require(xtable)
+require(gridExtra)
 
 wgs84 <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 nga_shp <- readShapeSpatial("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/raw_data/nga_lgas/nga_lgas_with_corrected_id.shp", proj4string=wgs84)
@@ -15,11 +17,13 @@ nga_shp <- readShapeSpatial("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleanin
 facilities <- readRDS("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/nmis/Normalized/Education_774_NMIS_Facility.rds")
 facilities$lat <- as.numeric(lapply(str_split(facilities$gps, " "), function(x) x[1]))
 facilities$long <- as.numeric(lapply(str_split(facilities$gps, " "), function(x) x[2]))
+facilities <- subset(facilities, select=c("facility_name", "community", "ward", "lat", "long",
+                                    "uuid", "facility_type", "lga_id"))
 # facilities <- facilities[1:60,]
 
 # # current lga data subsetting
 current_shp <- subset(nga_shp, lga_id == "2")
-# current_shp_fortify <- fortify(current_shp, region="Name")
+current_shp_fortify <- fortify(current_shp, region="Name")
 current_facilities <- subset(facilities, lga_id == "2")
 
 
@@ -82,6 +86,26 @@ get_osm_map <- function(current_bbox_df){
     return(map)
 }                                     
 
+facility_subset_griddf <- function(current_bbox_df, current_facilities_seriel_added){
+    x_min <- current_bbox_df$x_min
+    x_max <- current_bbox_df$x_max
+    y_min <- current_bbox_df$y_min
+    y_max <- current_bbox_df$y_max
+    map_num <- current_bbox_df$word
+    
+    current_facilities_seriel_added <- subset(current_facilities_seriel_added, ( 
+                                    long >= x_min & long <= x_max &
+                                    lat >= y_min & lat <= y_max),
+                                    select = c("seriel_ID", "facility_name", 
+                                               "community", "ward", "facility_type",
+                                               "uuid"))
+    current_facilities_seriel_added$map <- rep(map_num, nrow(current_facilities_seriel_added))
+    if (nrow(current_facilities_seriel_added) > 0){
+        grid.table(current_facilities_seriel_added)    
+    }
+    
+}
+
 # Plotting lga level
 getting_lga_graph <- function(current_shp_fortify, current_facilities, 
                               bbox_data, grid_lines){
@@ -124,6 +148,9 @@ getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify,
                    color=I('red'), size=5, shape='+') + 
         geom_vline(xintercept = grid_lines$x) + 
         geom_hline(yintercept = grid_lines$y) +
+        geom_text(data=current_facilities, 
+                  aes(x=long, y=lat, label=seriel_ID),
+                  color='black', size=3, vjust=-2) + 
         coord_equal() +
         theme(panel.grid=element_blank(),
               panel.background = element_blank()) +
@@ -143,30 +170,35 @@ lga_viz <- function(current_shp, current_facilities){
     current_shp_fortify <- fortify(current_shp, region="Name")
     grid_lines <- get_grids(current_shp, 3, 3)
     bbox_data <- get_grid_zoomin_bbox(grid_lines)
+    current_facilities$seriel_ID <- 1:nrow(current_facilities)
     
     getting_lga_graph(current_shp_fortify, current_facilities,
                       bbox_data, grid_lines)
     
-    d_ply(bbox_data, .(word), function(df) getting_zoomin_graph(df, current_shp_fortify,
-                                                                current_facilities, grid_lines))
-    
+    d_ply(bbox_data, .(word), function(df) {
+        getting_zoomin_graph(df, current_shp_fortify,
+                             current_facilities, grid_lines)
+        facility_subset_griddf(df, current_facilities)
+    })
 }
 
 
 # Below chunk is for testing only
-# grid_lines <- get_grids(current_shp, 3, 3)
-# bbox_data <- get_grid_zoomin_bbox(grid_lines)
-# lga_name <- current_shp_fortify$id[1]
-# 
-# current_bbox_df <- subset(bbox_data, word == "1")
-# 
-# getting_zoomin_graph(current_bbox_df, current_shp_fortify,
-#                      current_facilities, grid_lines)
-# 
-# getting_lga_graph(current_shp_fortify, current_facilities, bbox_data, grid_lines)
-# # single lga level 
+grid_lines <- get_grids(current_shp, 3, 3)
+bbox_data <- get_grid_zoomin_bbox(grid_lines)
+lga_name <- current_shp_fortify$id[1]
 
-pdf("./lga1.pdf")
+current_bbox_df <- subset(bbox_data, word == "1")
+
+getting_lga_graph(current_shp_fortify, current_facilities, bbox_data, grid_lines)
+
+getting_zoomin_graph(current_bbox_df, current_shp_fortify,
+                     current_facilities, grid_lines)
+
+
+# single lga level 
+
+pdf("./lga1.pdf", width = 7, height = 7)
 lga_viz(current_shp, current_facilities)
 dev.off()
 
