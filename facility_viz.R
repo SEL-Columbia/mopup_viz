@@ -9,16 +9,17 @@ require(RgoogleMaps)
 require(OpenStreetMap)
 require(xtable)
 require(gridExtra)
+require(RSAGA)
 
 wgs84 <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 nga_shp <- readShapeSpatial("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/raw_data/nga_lgas/nga_lgas_with_corrected_id.shp", proj4string=wgs84)
 
 # facility data processing
-facilities <- readRDS("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/nmis/Normalized/Education_774_NMIS_Facility.rds")
+facilities <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/nmis/data_774/Education_774_NMIS_Facility.csv")
 facilities$lat <- as.numeric(lapply(str_split(facilities$gps, " "), function(x) x[1]))
 facilities$long <- as.numeric(lapply(str_split(facilities$gps, " "), function(x) x[2]))
 facilities <- subset(facilities, select=c("facility_name", "community", "ward", "lat", "long",
-                                    "uuid", "facility_type", "lga_id"))
+                                    "facility_ID", "facility_type", "lga_id"))
 # facilities <- facilities[1:60,]
 
 # # current lga data subsetting
@@ -98,7 +99,7 @@ facility_subset_griddf <- function(current_bbox_df, current_facilities_seriel_ad
                                     lat >= y_min & lat <= y_max),
                                     select = c("seriel_ID", "facility_name", 
                                                "community", "ward", "facility_type",
-                                               "uuid"))
+                                               "facility_ID"))
     current_facilities_seriel_added$map <- rep(map_num, nrow(current_facilities_seriel_added))
     if (nrow(current_facilities_seriel_added) > 0){
         grid.newpage()
@@ -139,6 +140,9 @@ getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify,
                                  current_facilities, grid_lines){
     
     osm_map <- get_osm_map(current_bbox_df)
+    text_df <- subset(current_facilities, 
+                      !duplicated(seriel_ID),
+                      select = c("long", "lat", "seriel_ID"))
 
     plot <- autoplot(osm_map, expand=F) + 
         geom_polygon(data=current_shp_fortify, 
@@ -149,7 +153,7 @@ getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify,
                    color=I('red'), size=5, shape='+') + 
         geom_vline(xintercept = grid_lines$x) + 
         geom_hline(yintercept = grid_lines$y) +
-        geom_text(data=current_facilities, 
+        geom_text(data=text_df, 
                   aes(x=long, y=lat, label=seriel_ID),
                   color='black', size=3, vjust=0) + 
         coord_equal() +
@@ -165,13 +169,61 @@ getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify,
     print(plot)
 }
 
+### helper function to create proper serial_ID for solving near points issue
+facility_get_serial_ID <- function(current_facilities){
+    getting_closest_point <- function(current_facilities){
+        
+        facility_copy <- current_facilities
+        facility_copy$facility_ID.y <- facility_copy$facility_ID
+        facility_copy$lat.y <- facility_copy$lat
+        facility_copy$long.y <- facility_copy$long
+        facility_copy$seriel_ID.y <- facility_copy$seriel_ID
+        
+        
+        facility_list <- ddply(current_facilities, .(facility_ID), function(df){
+            candidate <- facility_copy
+            candidate <- subset(candidate, facility_ID.y != df$facility_ID[1])
+            closest_df <- pick.from.points(data=df, src=candidate, 
+                                           X.name="lat", Y.name="long", 
+                                           radius=10,
+                                           pick=c('facility_ID.y', 'lat.y', 'long.y', 'seriel_ID.y'),
+                                           set.na=TRUE)
+            
+            closest_df$dist <- sqrt((closest_df$lat - closest_df$lat.y)^2 + (closest_df$long - closest_df$long.y)^2)
+            return(closest_df)
+        })
+        facility_list <- arrange(facility_list, seriel_ID)
+        return(facility_list)
+    }
+    
+    
+    re_assign_serial_ID <- function(facility_list){
+        idx <- which(facility_list$dist < 0.0012)
+        for (i in idx){
+            
+            id <- which(facility_list$seriel_ID == facility_list$seriel_ID.y[i])
+            
+            facility_list$seriel_ID[id] <- facility_list$seriel_ID[i]
+            facility_list$seriel_ID.y[idx][which(facility_list$seriel_ID.y[idx] == facility_list$seriel_ID.y[i])] <- facility_list$seriel_ID[i]
+        }
+        return(facility_list)    
+    }
+    
+    # calling internal function to get result
+    current_facilities$seriel_ID <- 1:nrow(current_facilities)
+    facility_list <- re_assign_serial_ID(getting_closest_point(current_facilities))
+    facility_list <- subset(facility_list, select= -c(facility_ID.y, lat.y, long.y, seriel_ID.y))
+    
+    return(facility_list)
+}
+
 # Creating master function to plot lga overview + zoomin level all at once
 lga_viz <- function(current_shp, current_facilities){
     
     current_shp_fortify <- fortify(current_shp, region="Name")
     grid_lines <- get_grids(current_shp, 3, 3)
     bbox_data <- get_grid_zoomin_bbox(grid_lines)
-    current_facilities$seriel_ID <- 1:nrow(current_facilities)
+    current_facilities <- facility_get_serial_ID(current_facilities)
     
     getting_lga_graph(current_shp_fortify, current_facilities,
                       bbox_data, grid_lines)
@@ -182,6 +234,8 @@ lga_viz <- function(current_shp, current_facilities){
         facility_subset_griddf(df, current_facilities)
     })
 }
+
+
 
 
 # Below chunk is for testing only
