@@ -14,7 +14,11 @@ require(RSAGA)
 wgs84 <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 nga_shp <- readShapeSpatial("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/raw_data/nga_lgas/nga_lgas_with_corrected_id.shp", proj4string=wgs84)
 
-# facility data processing
+# missing facility list data processing
+missing_edu <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/mop_up_matching_result/facility_missing_list_edu.csv")
+missing_health <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/mop_up_matching_result/facility_missing_list_health.csv")
+
+# nmis data processing
 facilities <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/nmis/data_774/Education_774_NMIS_Facility.csv")
 facilities$lat <- as.numeric(lapply(str_split(facilities$gps, " "), function(x) x[1]))
 facilities$long <- as.numeric(lapply(str_split(facilities$gps, " "), function(x) x[2]))
@@ -26,6 +30,7 @@ facilities <- subset(facilities, select=c("facility_name", "community", "ward", 
 current_shp <- subset(nga_shp, lga_id == "2")
 current_shp_fortify <- fortify(current_shp, region="Name")
 current_facilities <- subset(facilities, lga_id == "2")
+current_missing <- subset(missing_edu, lga_id == "2")
 
 
 
@@ -219,19 +224,29 @@ facility_get_serial_ID <- function(current_facilities){
 }
 
 # Creating master function to plot lga overview + zoomin level all at once
-lga_viz <- function(current_shp, current_facilities){
+lga_viz <- function(current_shp, current_facilities, current_missing){
     
     current_shp_fortify <- fortify(current_shp, region="Name")
     grid_lines <- get_grids(current_shp, 3, 3)
     bbox_data <- get_grid_zoomin_bbox(grid_lines)
     current_facilities <- facility_get_serial_ID(current_facilities)
     
+    # print lga level map of current lga
     getting_lga_graph(current_shp_fortify, current_facilities,
                       bbox_data, grid_lines)
+    # print missing facility list of current lga
+    if (nrow(current_missing) > 0){
+        grid.newpage()
+        grid.table(current_missing, show.rownames = FALSE) 
+    }
     
+    
+    # zoomin starts here
     d_ply(bbox_data, .(word), function(df) {
+        # print zoomin small map
         getting_zoomin_graph(df, current_shp_fortify,
                              current_facilities, grid_lines)
+        # print NOT TO GO list of the small map
         facility_subset_griddf(df, current_facilities)
     })
 }
@@ -254,8 +269,8 @@ getting_zoomin_graph(current_bbox_df, current_shp_fortify,
 
 # single lga level 
 
-pdf("./lga1.pdf", width = 15, height = 10)
-    lga_viz(current_shp, current_facilities)
+pdf("./lga1.pdf", width = 12, height = 8)
+    lga_viz(current_shp, current_facilities, current_missing)
 dev.off()
 
 
