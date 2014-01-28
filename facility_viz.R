@@ -101,6 +101,7 @@ facility_subset_griddf <- function(current_bbox_df, current_facilities_seriel_ad
                                                "community", "ward", "facility_type",
                                                "facility_ID"))
     current_facilities_seriel_added$map <- rep(map_num, nrow(current_facilities_seriel_added))
+    current_facilities_seriel_added <- arrange(current_facilities_seriel_added, seriel_ID)
     if (nrow(current_facilities_seriel_added) > 0){
         grid.newpage()
         grid.table(current_facilities_seriel_added, show.rownames = FALSE)    
