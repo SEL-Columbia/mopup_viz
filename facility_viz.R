@@ -133,7 +133,7 @@ getting_lga_graph <- function(current_shp_fortify, current_facilities,
         geom_text(data=bbox_data, 
                   aes(x=x_center, y=y_center, label=word),
                   size=11, color='blue', alpha=0.4) + 
-#         coord_equal() + 
+        coord_equal() + 
         theme(panel.grid=element_blank(),
               panel.background = element_blank()) + 
         labs(title = paste('Map of', lga_name,sep=' ')) + 
@@ -162,10 +162,9 @@ getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify,
         geom_text(data=text_df, 
                   aes(x=long, y=lat, label=seriel_ID),
                   color='black', size=3, vjust=0) + 
-#         coord_equal() +
         theme(panel.grid=element_blank(),
               panel.background = element_blank()) +
-        coord_cartesian(xlim=c(current_bbox_df$x_min, 
+        coord_fixed(ratio=1, xlim=c(current_bbox_df$x_min, 
                                current_bbox_df$x_max),
                         ylim=c(current_bbox_df$y_min, 
                                current_bbox_df$y_max)) +   
@@ -273,7 +272,10 @@ pdf("./lga1.pdf", width = 12, height = 8)
     lga_viz(current_shp, current_facilities, current_missing)
 dev.off()
 
-
+pdf("./test.pdf", width = 12, height = 8)
+getting_zoomin_graph(current_bbox_df, current_shp_fortify,
+                     current_facilities, grid_lines)
+dev.off()
 
 
 # # Plotting lga level
