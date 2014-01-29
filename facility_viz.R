@@ -80,14 +80,14 @@ get_grid_zoomin_bbox <- function(grid_df){
 # }                                     
 
 # download ZOOM IN map img from osm
-get_osm_map <- function(current_bbox_df){
+get_osm_map <- function(current_bbox_df, tile_level = 5){
     
     n <- dim(current_bbox_df)[1]
     map <- openmap(upperLeft=c(lat = current_bbox_df$y_max[n], 
-                               lon=current_bbox_df$x_min[1]), 
+                               lon = current_bbox_df$x_min[1]), 
                    lowerRight=c(lat = current_bbox_df$y_min[1], 
-                                lon=current_bbox_df$x_max[n]),
-                   type="osm", minNumTiles=5)
+                                lon = current_bbox_df$x_max[n]),
+                   type="osm", minNumTiles = tile_level)
     map <- openproj(map) 
     return(map)
 }                                     
@@ -133,7 +133,7 @@ getting_lga_graph <- function(current_shp_fortify, current_facilities,
         geom_text(data=bbox_data, 
                   aes(x=x_center, y=y_center, label=word),
                   size=11, color='blue', alpha=0.4) + 
-        coord_equal() + 
+#         coord_equal() + 
         theme(panel.grid=element_blank(),
               panel.background = element_blank()) + 
         labs(title = paste('Map of', lga_name,sep=' ')) + 
@@ -162,7 +162,7 @@ getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify,
         geom_text(data=text_df, 
                   aes(x=long, y=lat, label=seriel_ID),
                   color='black', size=3, vjust=0) + 
-        coord_equal() +
+#         coord_equal() +
         theme(panel.grid=element_blank(),
               panel.background = element_blank()) +
         coord_cartesian(xlim=c(current_bbox_df$x_min, 
