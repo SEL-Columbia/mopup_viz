@@ -29,9 +29,8 @@ missing_health <- subset(missing_health,
 nmis_edu <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/nmis/data_774/Education_774_NMIS_Facility.csv")
 nmis_edu$lat <- as.numeric(lapply(str_split(nmis_edu$gps, " "), function(x) x[1]))
 nmis_edu$long <- as.numeric(lapply(str_split(nmis_edu$gps, " "), function(x) x[2]))
-nmis_edu <- subset(facilities, select=c("facility_name", "community", "ward", "lat", "long",
+nmis_edu <- subset(nmis_edu, select=c("facility_name", "community", "ward", "lat", "long",
                                     "facility_ID", "facility_type", "lga_id"))
-# facilities <- facilities[1:60,]
 
 # # current lga data subsetting
 current_shp <- subset(nga_shp, lga_id == "2")
@@ -128,15 +127,14 @@ facility_subset_griddf <- function(current_bbox_df, current_facilities_seriel_ad
                                                         "facility_ID" = "FACILITY_ID"))
     
     if (nrow(current_facilities_seriel_added) > 0){
-        grid.newpage()
-        grid.table(current_facilities_seriel_added, show.rownames = FALSE)    
+        title_name <- paste("Facilities that already surveyed in Area -", map_num, sep=' ')
+        grid_table_assemble(current_facilities_seriel_added, title_name)
     }
     
 }
 
 #### turn to-go-list into functions
-title_name <- paste("Facilities that need to be surveyed -", lga_nm, sep=' ')
-lga_nm <- "Abaji"
+
 
 
 grid_table_assemble <- function(df, title_name){
@@ -275,8 +273,9 @@ lga_viz <- function(current_shp, current_facilities, current_missing){
                       bbox_data, grid_lines)
     # print missing facility list of current lga
     if (nrow(current_missing) > 0){
-        grid.newpage()
-        grid.table(current_missing, show.rownames = FALSE) 
+        lga_name <- current_shp_fortify$id[1]
+        title_name <- paste("Facilities that need to be surveyed -", lga_name, sep=' ')
+        grid_table_assemble(current_missing, title_name)
     }
     
     
