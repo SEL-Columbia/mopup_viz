@@ -333,12 +333,32 @@ pdf("./lga1.pdf", width = 13, height = 16)
 lga_viz(current_shp, current_facilities, current_missing)
 dev.off()
 
-pdf("./test.pdf", width = 20, height = 8)
-grid.newpage()
-grid.table(missing_edu[1:20,], show.rownames = FALSE, row.just = "left",
-           col.just = "center", gpar.corefill = gpar(fill = "white", col = "black")) 
-dev.off()
 
+title_name <- paste("Facilities that already surveyed in Area -", map_num, sep=' ')
+grid_table_assemble(current_facilities_seriel_added, title_name)
+
+df <- current_facilities_seriel_added
+p <- 1
+
+break_data_grid_print <- function(df, title_name, page_limit = 55){
+    table_length <- nrow(df)
+    (if table_length <= page_limit){
+        grid_table_assemble(df, title_name)
+    }else{
+        pages <- (floor(table_length/page_limit) + 1)
+        df_break_buffer <- vector(mode="list", pages)
+        table_length %% page_limit
+        (for p in pages){
+            (if p != pages[length(pages)]){
+                df_break_buffer[p] <- df[(55*(p-1)+1): (55*(p-1)+55),]
+                
+            }else{
+                df_break_buffer[p] <- df[(55*(p-1)+1): table_length,]
+            }
+            
+        }
+    }
+}
 
 
 
