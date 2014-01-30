@@ -138,9 +138,11 @@ facility_subset_griddf <- function(current_bbox_df, current_facilities_seriel_ad
 
 
 grid_table_assemble <- function(df, title_name){
-    table <- tableGrob(df, show.rownames = FALSE, row.just = "left",
-                       col.just = "center", 
-                       gpar.corefill = gpar(fill = "white", col = "black"))
+    table <- tableGrob(df,
+                       show.rownames = FALSE,
+                       row.just = "left", col.just = "left", core.just="left",
+                       gpar.corefill = gpar(fill = "white", col = "grey"),
+                       )
     grid.newpage()
     h <- grobHeight(table)
     w <- grobWidth(table)
