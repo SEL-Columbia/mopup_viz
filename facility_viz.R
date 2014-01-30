@@ -92,10 +92,14 @@ get_grid_zoomin_bbox <- function(grid_df){
 get_osm_map <- function(current_bbox_df, tile_level = 5){
     
     n <- dim(current_bbox_df)[1]
-    map <- openmap(upperLeft=c(lat = current_bbox_df$y_max[n], 
-                               lon = current_bbox_df$x_min[1]), 
-                   lowerRight=c(lat = current_bbox_df$y_min[1], 
-                                lon = current_bbox_df$x_max[n]),
+    
+    x_margin <- (current_bbox_df$x_max[n] - current_bbox_df$x_min[1]) * 0.025
+    y_margin <- (current_bbox_df$y_max[n] - current_bbox_df$y_min[1]) * 0.025
+    
+    map <- openmap(upperLeft=c(lat = current_bbox_df$y_max[n] + y_margin, 
+                               lon = current_bbox_df$x_min[1] - x_margin), 
+                   lowerRight=c(lat = current_bbox_df$y_min[1] - y_margin, 
+                                lon = current_bbox_df$x_max[n] + x_margin),
                    type="osm", minNumTiles = tile_level)
     map <- openproj(map) 
     return(map)
@@ -165,12 +169,12 @@ getting_lga_graph <- function(current_shp_fortify, current_facilities,
     plot <- autoplot(osm_map, expand=F) + 
         geom_point(data=current_facilities, 
                    aes(x=long, y=lat), 
-                   color=I('black'), size=2) + 
+                   color=I('red'), size=2, alpha=0.6) + 
         geom_polygon(data=current_shp_fortify, 
                      aes(x=long, y=lat, group=group), 
                      fill='black', color='black', alpha=0.05) + 
-        geom_vline(xintercept = grid_lines$x) + 
-        geom_hline(yintercept = grid_lines$y) +
+        geom_vline(xintercept = grid_lines$x, linetype="dotted", size=1) + 
+        geom_hline(yintercept = grid_lines$y, linetype="dotted", size=1) +
         geom_text(data=bbox_data, 
                   aes(x=x_center, y=y_center, label=word),
                   size=11, color='blue', alpha=0.4) + 
@@ -187,6 +191,9 @@ getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify,
                                  current_facilities, grid_lines){
     
     osm_map <- get_osm_map(current_bbox_df)
+    x_margin <- (current_bbox_df$x_max - current_bbox_df$x_min)*0.025
+    y_margin <- (current_bbox_df$y_max - current_bbox_df$y_min)*0.025
+    
     text_df <- subset(current_facilities, 
                       !duplicated(seriel_ID),
                       select = c("long", "lat", "seriel_ID"))
@@ -197,18 +204,18 @@ getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify,
                      fill='black', color='black', alpha=0.05) + 
         geom_point(data=current_facilities, 
                    aes(x=long, y=lat), 
-                   color=I('red'), size=5) + 
-        geom_vline(xintercept = grid_lines$x) + 
-        geom_hline(yintercept = grid_lines$y) +
+                   color=I('red'), size=3, alpha=0.6) + 
+        geom_vline(xintercept = grid_lines$x, linetype="dotted", size=1) + 
+        geom_hline(yintercept = grid_lines$y, linetype="dotted", size=1) +
         geom_text(data=text_df, 
                   aes(x=long, y=lat, label=seriel_ID),
                   color='black', size=3, vjust=0) + 
         theme(panel.grid=element_blank(),
               panel.background = element_blank()) +
-        coord_fixed(ratio=1, xlim=c(current_bbox_df$x_min, 
-                               current_bbox_df$x_max),
-                        ylim=c(current_bbox_df$y_min, 
-                               current_bbox_df$y_max)) +   
+        coord_fixed(ratio=1, xlim=c(current_bbox_df$x_min - x_margin, 
+                                    current_bbox_df$x_max + x_margin),
+                            ylim=c(current_bbox_df$y_min - y_margin, 
+                                    current_bbox_df$y_max + y_margin)) +   
         labs(title = paste('Map of Area', 
                            current_bbox_df$word, sep=' ')) +
         xlab("Longitude") + ylab("Latitude")
@@ -259,6 +266,10 @@ facility_get_serial_ID <- function(current_facilities){
     current_facilities$seriel_ID <- 1:nrow(current_facilities)
     facility_list <- re_assign_serial_ID(getting_closest_point(current_facilities))
     facility_list <- subset(facility_list, select= -c(facility_ID.y, lat.y, long.y, seriel_ID.y))
+    
+    # adding * to the nearest points
+    dup_idx <- which(duplicated(facility_list$seriel_ID)|duplicated(facility_list$seriel_ID, fromLast=T))
+    facility_list[dup_idx, "seriel_ID"] <- paste(facility_list[dup_idx, "seriel_ID"], "*", sep="")
     
     return(facility_list)
 }
