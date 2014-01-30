@@ -41,18 +41,21 @@ current_missing <- subset(missing_edu, lga_id == "2")
 
 
 ### getting grid line coordinates
-get_grids <- function(current_shp, nrow=3, ncol=3){
+get_grids <- function(current_shp){
+    
+    y <- current_shp@bbox["y","max"] - current_shp@bbox["y","min"]
+    x <- current_shp@bbox["x","max"] - current_shp@bbox["x","min"]
+        
+    nrow <- round(y / 0.2) + 1
+    ncol <- round(x / 0.2) + 1
+    
+    grid_x <- seq(current_shp@bbox['x', 'min'], 
+                    current_shp@bbox['x', 'max'], length.out=ncol)
+    grid_y <- seq(current_shp@bbox['y', 'min'],
+                    current_shp@bbox['y', 'max'], length.out=nrow)
   
-  ncol <- ncol + 1
-  nrow <- nrow + 1
-  
-  grid_x <- seq(current_shp@bbox['x', 'min'], 
-                current_shp@bbox['x', 'max'], length.out=ncol)
-  grid_y <- seq(current_shp@bbox['y', 'min'],
-                current_shp@bbox['y', 'max'], length.out=nrow)
-  
-  grid_df <- data.frame(x=grid_x, y=grid_y)
-  return(grid_df)
+    grid_df <- list(x=grid_x, y=grid_y)
+    return(grid_df)
 }
 
 
@@ -264,7 +267,7 @@ facility_get_serial_ID <- function(current_facilities){
 lga_viz <- function(current_shp, current_facilities, current_missing){
     
     current_shp_fortify <- fortify(current_shp, region="Name")
-    grid_lines <- get_grids(current_shp, 3, 3)
+    grid_lines <- get_grids(current_shp)
     bbox_data <- get_grid_zoomin_bbox(grid_lines)
     current_facilities <- facility_get_serial_ID(current_facilities)
     
@@ -293,7 +296,7 @@ lga_viz <- function(current_shp, current_facilities, current_missing){
 
 
 # Below chunk is for testing only
-grid_lines <- get_grids(current_shp, 3, 3)
+grid_lines <- get_grids(current_shp)
 bbox_data <- get_grid_zoomin_bbox(grid_lines)
 lga_name <- current_shp_fortify$id[1]
 
@@ -318,16 +321,6 @@ grid.table(missing_edu[1:20,], show.rownames = FALSE, row.just = "left",
 dev.off()
 
 
-
-
-table <- tableGrob(missing_edu[1:20,], show.rownames = FALSE, row.just = "left",
-                   col.just = "center", 
-                   gpar.corefill = gpar(fill = "white", col = "black"))
-
-grid.newpage()
-h <- grobHeight(table)
-w <- grobWidth(table)
-lga_nm <- "Abaji"
 
 
 ######

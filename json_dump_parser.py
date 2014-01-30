@@ -27,6 +27,7 @@ def nmis_id_json_parser(infile):
                 community = current["community"]
                 ward = current["ward"]
                 short_id = current["short_id"]
+                facility_type = current["facility_type"]
                 
             except Exception, e:
                 print str(e)
@@ -36,7 +37,8 @@ def nmis_id_json_parser(infile):
                    "lga_id": lga_id,
                    "community": community,
                    "ward": ward,
-                   "short_id": short_id}
+                   "short_id": short_id,
+                   "facility_type": facility_type}
             id_list.append(obj)
     return id_list
 
