@@ -11,6 +11,9 @@ require(xtable)
 require(gridExtra)
 require(RSAGA)
 
+### 16inch in height corresponding to 55 line table + title
+
+
 wgs84 <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 nga_shp <- readShapeSpatial("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/raw_data/nga_lgas/nga_lgas_with_corrected_id.shp", proj4string=wgs84)
 
@@ -147,15 +150,17 @@ facility_subset_griddf <- function(current_bbox_df, current_facilities_seriel_ad
 grid_table_assemble <- function(df, title_name){
     table <- tableGrob(df, show.rownames = FALSE, row.just = "left",
                        col.just = "center", 
-                       gpar.corefill = gpar(fill = "white", col = "black"))
+                       gpar.corefill = gpar(fill = "white", col = "black"),
+                       gpar.coretext  = gpar(fontsize = 10,col="black"))
     grid.newpage()
     h <- grobHeight(table)
     w <- grobWidth(table)
     title <- textGrob(title_name, y=unit(0.5,"npc") + 0.5*h, 
-                      vjust=0, gp=gpar(fontsize=20, fontface = "bold"))
+                      vjust=0, gp=gpar(fontsize=15, fontface = "bold"))
     gt <- gTree(children=gList(table, title))
     grid.draw(gt)
 }
+
 
 
 
@@ -183,7 +188,7 @@ getting_lga_graph <- function(current_shp_fortify, current_facilities,
               panel.background = element_blank()) + 
         labs(title = paste('Map of', lga_name,sep=' ')) + 
         xlab("Longitude") + ylab("Latitude")
-    print(plot, width = 7, height = 7)
+    print(plot)
 }
 
 # Plotting area zoom in level
@@ -210,6 +215,9 @@ getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify,
         geom_text(data=text_df, 
                   aes(x=long, y=lat, label=seriel_ID),
                   color='black', size=3, vjust=0) + 
+        geom_text(data=bbox_data, 
+                  aes(x=x_center, y=y_center, label=word),
+                  size=11, color='blue', alpha=0.3) + 
         theme(panel.grid=element_blank(),
               panel.background = element_blank()) +
         coord_fixed(ratio=1, xlim=c(current_bbox_df$x_min - x_margin, 
@@ -321,8 +329,8 @@ getting_zoomin_graph(current_bbox_df, current_shp_fortify,
 
 # single lga level 
 
-pdf("./lga1.pdf", width = 12, height = 8)
-    lga_viz(current_shp, current_facilities, current_missing)
+pdf("./lga1.pdf", width = 13, height = 16)
+lga_viz(current_shp, current_facilities, current_missing)
 dev.off()
 
 pdf("./test.pdf", width = 20, height = 8)
