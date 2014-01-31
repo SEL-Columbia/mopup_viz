@@ -284,7 +284,7 @@ lga_viz <- function(lga_data) {
 
 to_pdf <- function(LGA_ID) {
     lga_data <- get_data_for_current_lga(LGA_ID)
-    pdf(paste0('pdfs/', lga_data$name, '.pdf'), width = 11, height = 8.5)
+    pdf(sprintf('pdfs/%s_%s.pdf', LGA_ID, lga_data$name), width = 11, height = 8.5)
     lga_viz(lga_data)
     dev.off()    
 }
