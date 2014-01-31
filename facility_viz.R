@@ -62,11 +62,9 @@ get_grids <- function(current_shp){
     return(grid_df)
 }
 
-
-
-#### define function for grid line df 
+### Starting with grid_df a list, x=x-intercept vector, y=y-intercept vector
+## generates x_min x_max y_min y_max x_center y_center word
 get_grid_zoomin_bbox <- function(grid_df){
-  
   x <- grid_df$x
   y <- grid_df$y
   x_coor <- data.frame(x_min = x[1:length(x)-1], 
@@ -98,39 +96,38 @@ get_osm_map <- function(current_bbox_df, tile_level = 5){
     return(map)
 }                                     
 
-facility_subset_griddf <- function(current_bbox_df, current_facilities_seriel_added){
+facility_subset_griddf <- function(current_bbox_df, current_facilities_serial_added){
     x_min <- current_bbox_df$x_min
     x_max <- current_bbox_df$x_max
     y_min <- current_bbox_df$y_min
     y_max <- current_bbox_df$y_max
     map_num <- current_bbox_df$word
     
-    current_facilities_seriel_added <- subset(current_facilities_seriel_added, ( 
+    current_facilities_serial_added <- subset(current_facilities_serial_added, ( 
                                     long >= x_min & long <= x_max &
                                     lat >= y_min & lat <= y_max),
-                                    select = c("seriel_ID", "facility_name", 
+                                    select = c("serial_ID", "facility_name", 
                                                "community", "ward", "facility_type",
                                                "facility_ID"))
-    current_facilities_seriel_added$map <- rep(map_num, nrow(current_facilities_seriel_added))
-    current_facilities_seriel_added <- current_facilities_seriel_added[,c("map", "seriel_ID",
+    current_facilities_serial_added$map <- rep(map_num, nrow(current_facilities_serial_added))
+    current_facilities_serial_added <- current_facilities_serial_added[,c("map", "serial_ID",
                                                                           "facility_name", "ward", 
                                                                           "community", "facility_type",
                                                                           "facility_ID")]
-    current_facilities_seriel_added <- arrange(current_facilities_seriel_added, seriel_ID)
-    current_facilities_seriel_added <- rename(current_facilities_seriel_added, 
+    current_facilities_serial_added <- arrange(current_facilities_serial_added, serial_ID)
+    current_facilities_serial_added <- rename(current_facilities_serial_added, 
                                               replace=c("map" = "MAP",
-                                                        "seriel_ID" = "ID#",
+                                                        "serial_ID" = "ID#",
                                                         "facility_name" = "NAME",
                                                         "ward" = "WARD",
                                                         "community" = "COMMUNITY",
                                                         "facility_type" = "TYPE",
                                                         "facility_ID" = "FACILITY_ID"))
     
-    if (nrow(current_facilities_seriel_added) > 0){
+    if (nrow(current_facilities_serial_added) > 0){
         title_name <- paste("Facilities that already surveyed in Area -", map_num, sep=' ')
-        break_data_grid_print(current_facilities_seriel_added, title_name)
+        break_data_grid_print(current_facilities_serial_added, title_name)
     }
-    
 }
 
 #### turn to-go-list into functions
@@ -209,8 +206,8 @@ getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify,
     y_margin <- (current_bbox_df$y_max - current_bbox_df$y_min)*0.025
     
     text_df <- subset(current_facilities, 
-                      !duplicated(seriel_ID),
-                      select = c("long", "lat", "seriel_ID"))
+                      !duplicated(serial_ID),
+                      select = c("long", "lat", "serial_ID"))
 
     plot <- autoplot(osm_map, expand=F) + 
         geom_polygon(data=current_shp_fortify, 
@@ -222,7 +219,7 @@ getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify,
         geom_vline(xintercept = grid_lines$x, linetype="dotted", size=1) + 
         geom_hline(yintercept = grid_lines$y, linetype="dotted", size=1) +
         geom_text(data=text_df, 
-                  aes(x=long, y=lat, label=seriel_ID),
+                  aes(x=long, y=lat, label=serial_ID),
                   color='black', size=3, vjust=0) + 
         geom_text(data=bbox_data, 
                   aes(x=x_center, y=y_center, label=word),
@@ -247,7 +244,7 @@ facility_get_serial_ID <- function(current_facilities){
         facility_copy$facility_ID.y <- facility_copy$facility_ID
         facility_copy$lat.y <- facility_copy$lat
         facility_copy$long.y <- facility_copy$long
-        facility_copy$seriel_ID.y <- facility_copy$seriel_ID
+        facility_copy$serial_ID.y <- facility_copy$serial_ID
         
         
         facility_list <- ddply(current_facilities, .(facility_ID), function(df){
@@ -256,13 +253,13 @@ facility_get_serial_ID <- function(current_facilities){
             closest_df <- pick.from.points(data=df, src=candidate, 
                                            X.name="lat", Y.name="long", 
                                            radius=10,
-                                           pick=c('facility_ID.y', 'lat.y', 'long.y', 'seriel_ID.y'),
+                                           pick=c('facility_ID.y', 'lat.y', 'long.y', 'serial_ID.y'),
                                            set.na=TRUE)
             
             closest_df$dist <- sqrt((closest_df$lat - closest_df$lat.y)^2 + (closest_df$long - closest_df$long.y)^2)
             return(closest_df)
         })
-        facility_list <- arrange(facility_list, seriel_ID)
+        facility_list <- arrange(facility_list, serial_ID)
         return(facility_list)
     }
     
@@ -271,22 +268,22 @@ facility_get_serial_ID <- function(current_facilities){
         idx <- which(facility_list$dist < 0.0012)
         for (i in idx){
             
-            id <- which(facility_list$seriel_ID == facility_list$seriel_ID.y[i])
+            id <- which(facility_list$serial_ID == facility_list$serial_ID.y[i])
             
-            facility_list$seriel_ID[id] <- facility_list$seriel_ID[i]
-            facility_list$seriel_ID.y[idx][which(facility_list$seriel_ID.y[idx] == facility_list$seriel_ID.y[i])] <- facility_list$seriel_ID[i]
+            facility_list$serial_ID[id] <- facility_list$serial_ID[i]
+            facility_list$serial_ID.y[idx][which(facility_list$serial_ID.y[idx] == facility_list$serial_ID.y[i])] <- facility_list$serial_ID[i]
         }
         return(facility_list)    
     }
     
     # calling internal function to get result
-    current_facilities$seriel_ID <- 1:nrow(current_facilities)
+    current_facilities$serial_ID <- 1:nrow(current_facilities)
     facility_list <- re_assign_serial_ID(getting_closest_point(current_facilities))
-    facility_list <- subset(facility_list, select= -c(facility_ID.y, lat.y, long.y, seriel_ID.y))
+    facility_list <- subset(facility_list, select= -c(facility_ID.y, lat.y, long.y, serial_ID.y))
     
     # adding * to the nearest points
-    dup_idx <- which(duplicated(facility_list$seriel_ID)|duplicated(facility_list$seriel_ID, fromLast=T))
-    facility_list[dup_idx, "seriel_ID"] <- paste(facility_list[dup_idx, "seriel_ID"], "*", sep="")
+    dup_idx <- which(duplicated(facility_list$serial_ID)|duplicated(facility_list$serial_ID, fromLast=T))
+    facility_list[dup_idx, "serial_ID"] <- paste(facility_list[dup_idx, "serial_ID"], "*", sep="")
     
     return(facility_list)
 }
@@ -345,7 +342,7 @@ dev.off()
 
 
 title_name <- paste("Facilities that already surveyed in Area -", map_num, sep=' ')
-grid_table_assemble(current_facilities_seriel_added, title_name)
+grid_table_assemble(current_facilities_serial_added, title_name)
 
 df <- current_facilities
 p <- 1
