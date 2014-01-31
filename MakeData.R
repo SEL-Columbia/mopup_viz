@@ -1,3 +1,7 @@
+require(maptools)
+require(ggplot2)
+require(plyr)
+
 wgs84 <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 nga_shp <- readShapeSpatial("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/raw_data/nga_lgas/nga_lgas_with_corrected_id.shp", proj4string=wgs84)
 
@@ -12,11 +16,11 @@ saveRDS(nga_shp_fortify, "data/NGALGAS_fortified.rds")
 edu_type_revalue <- c("adult_ed"="Adult", "adult_lit"="Adult", 
                       "adult_vocational"="Adult", "js"="JS", "js_ss"="JS + SS", 
                       "junior_and_senior_sec"="JS + SS", "primary_js_ss" = "Primary + JS + SS",
-                      "junior_sec_only" = "JS Only", "preprimary" = "Preprimary", 
+                      "junior_sec_only" = "JS Only", "juniors_sec_only" = "JS Only", 
                       "preprimary_and_primary"="Preprim + Primary", "preprimary_only"="Preprimary",
                       "preprimary_primary"="Preprim + Primary", "primary" = "Primary Only",
                       "primary_and_junior_sec"="Primary + JS", "primary_js" = "Primary + JS",
-                      "primary_junior_and_senior_sec" = "Primary + JS + SS",
+                      "primary_junior_and_senior_sec" = "Primary + JS + SS", "preprimary" = "Preprimary", 
                       "primary_only" = "Primary Only", "science_technical" = "Other", 
                       "senior_sec_only" = "SS Only", "ss" = "SS Only", "vocational" = "Voc",
                       "vocational_post_primary" = "Voc", "vocational_post_secondary" = "Voc")
@@ -34,8 +38,8 @@ missing_edu <- subset(missing_edu,
                       select=c(names(renamelist_missing), "lga_id"))
 missing_health <- subset(missing_health,
                       select=c(names(renamelist_missing), "lga_id"))
-#missing_edu <- rename(missing_edu, renamelist_missing)
-#missing_health <- rename(missing_health, renamelist_missing)
+missing_edu <- rename(missing_edu, renamelist_missing)
+missing_health <- rename(missing_health, renamelist_missing)
 saveRDS(missing_edu, "data/MissingEducationFacilities.rds")
 saveRDS(missing_health, "data/MissingHealthFacilities.rds")
 

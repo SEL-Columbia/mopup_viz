@@ -1,5 +1,4 @@
 require(RColorBrewer)
-require(maptools)
 require(ggplot2)
 require(plyr)
 require(stringr)
@@ -23,8 +22,8 @@ nga_shp_fortified <- readRDS("data/NGALGAS_fortified.rds")
 get_data_for_current_lga = function(LGA_ID) {
     shp = subset(nga_shp, lga_id==LGA_ID)
     list(
-        missing_edu = subset(missing_edu, lga_id==LGA_ID),
-        missing_health = subset(missing_health, lga_id==LGA_ID),
+        missing_edu = subset(missing_edu, lga_id==LGA_ID, select=-c(lga_id)),
+        missing_health = subset(missing_health, lga_id==LGA_ID, select=-c(lga_id)),
         nmis_edu = subset(nmis_edu, lga_id==LGA_ID),
         nmis_health = subset(nmis_health, lga_id==LGA_ID),
         shp = shp,
@@ -86,7 +85,7 @@ get_osm_map <- function(current_bbox_df, tile_level = 5){
     return(map)
 }                                     
 
-facility_subset_griddf <- function(current_bbox_df, current_facilities_serial_added){
+facility_subset_griddf <- function(current_bbox_df, current_facilities_serial_added, title) {
     x_min <- current_bbox_df$x_min
     x_max <- current_bbox_df$x_max
     y_min <- current_bbox_df$y_min
@@ -113,8 +112,7 @@ facility_subset_griddf <- function(current_bbox_df, current_facilities_serial_ad
                                                         "facility_type" = "TYPE",
                                                         "facility_ID" = "FACILITY_ID"))
     if (nrow(current_facilities_serial_added) > 0) {
-        title_name <- paste("Facilities that already surveyed in Area -", map_num, sep=' ')
-        break_data_grid_print(current_facilities_serial_added, title_name)
+        break_data_grid_print(current_facilities_serial_added, title)
     }
 }
 
@@ -133,7 +131,7 @@ grid_table_assemble <- function(df, title_name){
     grid.draw(gt)
 }
 
-break_data_grid_print <- function(df, title_name, page_limit = 30) {
+break_data_grid_print <- function(df, title_name, page_limit = 25) {
     df$splitter <- cut_interval(1:nrow(df), length=page_limit)
     d_ply(df, .(splitter), function(df) {
         grid_table_assemble(subset(df,select=-c(splitter)), title_name)
@@ -141,10 +139,7 @@ break_data_grid_print <- function(df, title_name, page_limit = 30) {
 }
 
 # Plotting lga level
-getting_lga_graph <- function(current_shp_fortify, current_facilities, 
-                              bbox_data, grid_lines) {
-    
-    lga_name <- current_shp_fortify$id[1]
+getting_lga_graph <- function(current_shp_fortify, current_facilities, bbox_data, grid_lines, title) {
     osm_map <- get_osm_map(bbox_data)
         
     plot <- autoplot(osm_map, expand=F) + 
@@ -160,9 +155,9 @@ getting_lga_graph <- function(current_shp_fortify, current_facilities,
                   aes(x=x_center, y=y_center, label=word),
                   size=11, color='blue', alpha=0.4) + 
         coord_equal() + 
+        labs(title=title) +
         theme(panel.grid=element_blank(),
               panel.background = element_blank()) + 
-        labs(title = paste('Map of', lga_name,sep=' ')) + 
         xlab("Longitude") + ylab("Latitude")
     print(plot)
 }
@@ -236,26 +231,49 @@ facility_get_serial_ID <- function(fac, DIST_THRESHOLD=0.0012) {
 lga_viz <- function(lga_data) {
     grid_lines <- get_grids(lga_data$shp)
     bbox_data <- get_grid_zoomin_bbox(grid_lines)
-    current_facilities <- facility_get_serial_ID(lga_data$nmis_edu, .01)
+    lga_name <- lga_data$name
     
-    # print lga level map of current lga
-    getting_lga_graph(lga_data$shp_fortified, lga_data$nmis_edu, bbox_data, grid_lines)
-    
-    # print missing facility list of current lga
-    if (nrow(lga_data$missing_edu) > 0){
-        lga_name <- lga_data$name
-        title_name <- paste("Education Facilities that need to be surveyed -", lga_name, sep=' ')
-        break_data_grid_print(lga_data$missing_edu, title_name)
+    to_be_surveyed <- function(missing, sector, num) {
+        if (nrow(missing) > 0){        
+            break_data_grid_print(missing,
+                                  sprintf("%s. %s Facilities that need to be surveyed - %s", 
+                                          num, sector, lga_name))
+        }    
     }
     
-    # zoomin starts here
-    d_ply(bbox_data, .(word), function(df) {
-        # print zoomin small map
-        getting_zoomin_graph(df, lga_data$shp_fortified,
-                            current_facilities, grid_lines)
-        # print NOT TO GO list of the small map
-        facility_subset_griddf(df, current_facilities)
-    })
+    zoomed_in <- function(nmisdata, sector) {
+        current_facilities <- facility_get_serial_ID(nmisdata, .01)
+        d_ply(bbox_data, .(word), function(df) {
+            # print zoomin small map
+            getting_zoomin_graph(df, lga_data$shp_fortified,
+                                 current_facilities, grid_lines)
+            # print NOT TO GO list of the small map
+            facility_subset_griddf(df, current_facilities,
+                                   sprintf("Surveyed %s Facilities in %s - Area %s", 
+                                           sector, lga_name, df[1,'word']))
+        })    
+    }
+    
+    # PAGE 1: Education facilities that need to be surveyed
+    to_be_surveyed(lga_data$missing_edu, "Education", 'A')
+    
+    # PAGE 2: Health facilities that need to be surveyed
+    to_be_surveyed(lga_data$missing_health, "Health", 'B')
+    
+    # PAGE 3: OVERVIEW Education
+    getting_lga_graph(lga_data$shp_fortified, lga_data$nmis_edu, bbox_data, grid_lines,
+                      sprintf("C. Surveyed Education Facilities - %s", lga_name))
+    
+    # ZOOMED IN MAPS AND TABLES -- EDUCATION
+    zoomed_in(lga_data$nmis_edu, "Education")
+    
+    # PAGE 4: OVERVIEW Health
+    # print lga level map of current lga
+    getting_lga_graph(lga_data$shp_fortified, lga_data$nmis_health, bbox_data, grid_lines,
+                      sprintf("D. Surveyed Health Facilities - %s", lga_name))
+    
+    # ZOOMED IN MAPS AND TABLES -- HEALTH
+    zoomed_in(lga_data$nmis_health, "Health")
 }
 
 to_pdf <- function(LGA_ID) {
