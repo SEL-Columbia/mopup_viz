@@ -9,7 +9,7 @@ require(RgoogleMaps)
 require(OpenStreetMap)
 require(xtable)
 require(gridExtra)
-require(RSAGA)
+require(RANN)
 
 ### 16inch in height corresponding to 55 line table + title
 
@@ -199,7 +199,7 @@ getting_lga_graph <- function(current_shp_fortify, current_facilities,
 
 # Plotting area zoom in level
 getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify, 
-                                 current_facilities, grid_lines){
+                                 current_facilities, grid_lines) {
     
     osm_map <- get_osm_map(current_bbox_df)
     x_margin <- (current_bbox_df$x_max - current_bbox_df$x_min)*0.025
@@ -237,55 +237,28 @@ getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify,
 }
 
 ### helper function to create proper serial_ID for solving near points issue
-facility_get_serial_ID <- function(current_facilities){
-    getting_closest_point <- function(current_facilities){
+facility_get_serial_ID <- function(fac, DIST_THRESHOLD=0.0012) {
+    fac$serial_ID <- 1:nrow(fac)
         
-        facility_copy <- current_facilities
-        facility_copy$facility_ID.y <- facility_copy$facility_ID
-        facility_copy$lat.y <- facility_copy$lat
-        facility_copy$long.y <- facility_copy$long
-        facility_copy$serial_ID.y <- facility_copy$serial_ID
-        
-        
-        facility_list <- ddply(current_facilities, .(facility_ID), function(df){
-            candidate <- facility_copy
-            candidate <- subset(candidate, facility_ID.y != df$facility_ID[1])
-            closest_df <- pick.from.points(data=df, src=candidate, 
-                                           X.name="lat", Y.name="long", 
-                                           radius=10,
-                                           pick=c('facility_ID.y', 'lat.y', 'long.y', 'serial_ID.y'),
-                                           set.na=TRUE)
+    #### FIND THE CLOSEST FACILITY
+    nn <- nn2(fac[c("lat", "long")], k=2)
+    fac$serial_ID.y <- nn$nn.idx[,2] # first neighbor is self
+    fac$dist <- nn$nn.dist[,2]
+
+    #### COMBINE IDS for CLOSE FACILITIES
+    idx <- which(fac$dist < DIST_THRESHOLD)
+    for (i in idx){
+        id <- which(fac$serial_ID == fac$serial_ID.y[i])
             
-            closest_df$dist <- sqrt((closest_df$lat - closest_df$lat.y)^2 + (closest_df$long - closest_df$long.y)^2)
-            return(closest_df)
-        })
-        facility_list <- arrange(facility_list, serial_ID)
-        return(facility_list)
+        fac$serial_ID[id] <- fac$serial_ID[i]
+        fac$serial_ID.y[idx][which(fac$serial_ID.y[idx] == fac$serial_ID.y[i])] <- fac$serial_ID[i]
     }
-    
-    
-    re_assign_serial_ID <- function(facility_list){
-        idx <- which(facility_list$dist < 0.0012)
-        for (i in idx){
-            
-            id <- which(facility_list$serial_ID == facility_list$serial_ID.y[i])
-            
-            facility_list$serial_ID[id] <- facility_list$serial_ID[i]
-            facility_list$serial_ID.y[idx][which(facility_list$serial_ID.y[idx] == facility_list$serial_ID.y[i])] <- facility_list$serial_ID[i]
-        }
-        return(facility_list)    
-    }
+    fac[idx,'serial_ID'] <- paste0(fac[idx,'serial_ID'], "*")
     
     # calling internal function to get result
-    current_facilities$serial_ID <- 1:nrow(current_facilities)
-    facility_list <- re_assign_serial_ID(getting_closest_point(current_facilities))
-    facility_list <- subset(facility_list, select= -c(facility_ID.y, lat.y, long.y, serial_ID.y))
+    fac <- subset(fac, select= -c(serial_ID.y))
     
-    # adding * to the nearest points
-    dup_idx <- which(duplicated(facility_list$serial_ID)|duplicated(facility_list$serial_ID, fromLast=T))
-    facility_list[dup_idx, "serial_ID"] <- paste(facility_list[dup_idx, "serial_ID"], "*", sep="")
-    
-    return(facility_list)
+    return(fac)
 }
 
 # Creating master function to plot lga overview + zoomin level all at once
@@ -317,9 +290,6 @@ lga_viz <- function(current_shp, current_facilities, current_missing){
         facility_subset_griddf(df, current_facilities)
     })
 }
-
-
-
 
 # Below chunk is for testing only
 grid_lines <- get_grids(current_shp)
