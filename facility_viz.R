@@ -210,18 +210,19 @@ getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify,
 
 ### helper function to create proper serial_ID for solving near points issue
 facility_get_serial_ID <- function(fac, DIST_THRESHOLD=0.0012) {
+    
     fac$serial_ID <- 1:nrow(fac)
-        
+    
     #### FIND THE CLOSEST FACILITY
     nn <- nn2(fac[c("lat", "long")], k=2)
     fac$serial_ID.y <- nn$nn.idx[,2] # first neighbor is self
     fac$dist <- nn$nn.dist[,2]
-
+    
     #### COMBINE IDS for CLOSE FACILITIES
     idx <- which(fac$dist < DIST_THRESHOLD)
     for (i in idx){
         id <- which(fac$serial_ID == fac$serial_ID.y[i])
-            
+        
         fac$serial_ID[id] <- fac$serial_ID[i]
         fac$serial_ID.y[idx][which(fac$serial_ID.y[idx] == fac$serial_ID.y[i])] <- fac$serial_ID[i]
     }
@@ -230,7 +231,8 @@ facility_get_serial_ID <- function(fac, DIST_THRESHOLD=0.0012) {
     # calling internal function to get result
     fac <- subset(fac, select= -c(serial_ID.y))
     
-    return(fac)
+    return(fac)    
+    
 }
 
 # Creating master function to plot lga overview + zoomin level all at once
@@ -267,19 +269,25 @@ lga_viz <- function(lga_data) {
     to_be_surveyed(lga_data$missing_health, "Health", 'B')
     
     # PAGE 3: OVERVIEW Education
-    getting_lga_graph(lga_data$shp_fortified, lga_data$nmis_edu, bbox_data, grid_lines,
-                      sprintf("C. Surveyed Education Facilities - %s", lga_name))
+    if (nrow(lga_data$nmis_edu) != 0){
+        # print lga level map of current lga
+        getting_lga_graph(lga_data$shp_fortified, lga_data$nmis_edu, bbox_data, grid_lines,
+                          sprintf("C. Surveyed Education Facilities - %s", lga_name))
+        
+        # ZOOMED IN MAPS AND TABLES -- EDUCATION
+        zoomed_in(lga_data$nmis_edu, "Education")    
+    }
     
-    # ZOOMED IN MAPS AND TABLES -- EDUCATION
-    zoomed_in(lga_data$nmis_edu, "Education")
     
     # PAGE 4: OVERVIEW Health
+    if (nrow(lga_data$nmis_health) != 0){
     # print lga level map of current lga
     getting_lga_graph(lga_data$shp_fortified, lga_data$nmis_health, bbox_data, grid_lines,
                       sprintf("D. Surveyed Health Facilities - %s", lga_name))
     
     # ZOOMED IN MAPS AND TABLES -- HEALTH
     zoomed_in(lga_data$nmis_health, "Health")
+    }
 }
 
 to_pdf <- function(LGA_ID) {
