@@ -34,13 +34,30 @@ get_data_for_current_lga = function(LGA_ID) {
 
 ### Given shapefile, break it up into a grid.
 # Grid size will be approx: xwidth X ywidth (defaulted to 0.2)
-get_grids <- function(current_shp, xwidth=0.2, ywidth=0.2){
+get_grids <- function(current_shp){
+    
+    # helper function to determine "best" grid size
+    smart_width <- function(x, y)
+    {
+        input <- max(x,y)
+        if(input < 0.7){
+            return(0.2)
+        }else if(input >= 0.7 & input < 1.05){
+            return(0.3)
+        }else if(input >= 1.05 & input < 1.4){
+            return(0.4)
+        }else{
+            return(0.5)
+        }
+        
+    }
     
     y <- current_shp@bbox["y","max"] - current_shp@bbox["y","min"]
     x <- current_shp@bbox["x","max"] - current_shp@bbox["x","min"]
-        
-    nrow <- round(y / xwidth) + 1
-    ncol <- round(x / ywidth) + 1
+    
+    size <- smart_width(x, y)
+    nrow <- round(y / size) + 1
+    ncol <- round(x / size) + 1
     
     grid_x <- seq(current_shp@bbox['x', 'min'], 
                     current_shp@bbox['x', 'max'], length.out=ncol)
@@ -50,6 +67,7 @@ get_grids <- function(current_shp, xwidth=0.2, ywidth=0.2){
     grid_df <- list(x=grid_x, y=grid_y)
     return(grid_df)
 }
+
 
 ### Starting with grid_df a list, x=x-intercept vector, y=y-intercept vector
 ## generates x_min x_max y_min y_max x_center y_center word
