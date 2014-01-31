@@ -22,18 +22,18 @@ missing_edu <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in
 missing_health <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/mop_up_matching_result/facility_missing_list_health.csv")
 
 missing_edu <- subset(missing_edu, 
-                     select=c("short_id", "facility_name", "ward",
-                              "community", "facility_type", "lga_id"))
-missing_health <- subset(missing_health, 
                       select=c("short_id", "facility_name", "ward",
                                "community", "facility_type", "lga_id"))
+missing_health <- subset(missing_health, 
+                         select=c("short_id", "facility_name", "ward",
+                                  "community", "facility_type", "lga_id"))
 
 # nmis data processing
 nmis_edu <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/nmis/data_774/Education_774_NMIS_Facility.csv")
 nmis_edu$lat <- as.numeric(lapply(str_split(nmis_edu$gps, " "), function(x) x[1]))
 nmis_edu$long <- as.numeric(lapply(str_split(nmis_edu$gps, " "), function(x) x[2]))
 nmis_edu <- subset(nmis_edu, select=c("facility_name", "community", "ward", "lat", "long",
-                                    "facility_ID", "facility_type", "lga_id"))
+                                      "facility_ID", "facility_type", "lga_id"))
 
 # # current lga data subsetting
 current_shp <- subset(nga_shp, lga_id == "2")
@@ -48,15 +48,15 @@ get_grids <- function(current_shp){
     
     y <- current_shp@bbox["y","max"] - current_shp@bbox["y","min"]
     x <- current_shp@bbox["x","max"] - current_shp@bbox["x","min"]
-        
+    
     nrow <- round(y / 0.2) + 1
     ncol <- round(x / 0.2) + 1
     
     grid_x <- seq(current_shp@bbox['x', 'min'], 
-                    current_shp@bbox['x', 'max'], length.out=ncol)
+                  current_shp@bbox['x', 'max'], length.out=ncol)
     grid_y <- seq(current_shp@bbox['y', 'min'],
-                    current_shp@bbox['y', 'max'], length.out=nrow)
-  
+                  current_shp@bbox['y', 'max'], length.out=nrow)
+    
     grid_df <- list(x=grid_x, y=grid_y)
     return(grid_df)
 }
@@ -65,18 +65,18 @@ get_grids <- function(current_shp){
 
 #### define function for grid line df 
 get_grid_zoomin_bbox <- function(grid_df){
-  
-  x <- grid_df$x
-  y <- grid_df$y
-  x_coor <- data.frame(x_min = x[1:length(x)-1], 
-                       x_max = x[2:length(x)])
-  y_coor <- data.frame(y_min = y[1:length(y)-1],
-                       y_max = y[2:length(y)])
-  bbox_df <- merge(x_coor, y_coor, by=NULL)
-  bbox_df$x_center <- rowMeans(bbox_df[, c('x_min', 'x_max')])
-  bbox_df$y_center <- rowMeans(bbox_df[, c('y_min', 'y_max')])
-  bbox_df$word <- 1:nrow(bbox_df)
-  return(bbox_df)
+    
+    x <- grid_df$x
+    y <- grid_df$y
+    x_coor <- data.frame(x_min = x[1:length(x)-1], 
+                         x_max = x[2:length(x)])
+    y_coor <- data.frame(y_min = y[1:length(y)-1],
+                         y_max = y[2:length(y)])
+    bbox_df <- merge(x_coor, y_coor, by=NULL)
+    bbox_df$x_center <- rowMeans(bbox_df[, c('x_min', 'x_max')])
+    bbox_df$y_center <- rowMeans(bbox_df[, c('y_min', 'y_max')])
+    bbox_df$word <- 1:nrow(bbox_df)
+    return(bbox_df)
 }
 
 # download map img from osm
@@ -116,11 +116,11 @@ facility_subset_griddf <- function(current_bbox_df, current_facilities_seriel_ad
     map_num <- current_bbox_df$word
     
     current_facilities_seriel_added <- subset(current_facilities_seriel_added, ( 
-                                    long >= x_min & long <= x_max &
-                                    lat >= y_min & lat <= y_max),
-                                    select = c("seriel_ID", "facility_name", 
-                                               "community", "ward", "facility_type",
-                                               "facility_ID"))
+        long >= x_min & long <= x_max &
+            lat >= y_min & lat <= y_max),
+        select = c("seriel_ID", "facility_name", 
+                   "community", "ward", "facility_type",
+                   "facility_ID"))
     current_facilities_seriel_added$map <- rep(map_num, nrow(current_facilities_seriel_added))
     current_facilities_seriel_added <- current_facilities_seriel_added[,c("map", "seriel_ID",
                                                                           "facility_name", "ward", 
@@ -148,11 +148,18 @@ facility_subset_griddf <- function(current_bbox_df, current_facilities_seriel_ad
 
 
 grid_table_assemble <- function(df, title_name){
-<<<<<<< HEAD
+    <<<<<<< HEAD
     table <- tableGrob(df, show.rownames = FALSE, row.just = "left",
-                       col.just = "left", core.just="left", 
-                       gpar.corefill = gpar(fill = "white", col = "grey"),
+                       col.just = "center", 
+                       gpar.corefill = gpar(fill = "white", col = "black"),
                        gpar.coretext  = gpar(fontsize = 10,col="black"))
+    =======
+        table <- tableGrob(df,
+                           show.rownames = FALSE,
+                           row.just = "left", col.just = "left", core.just="left",
+                           gpar.corefill = gpar(fill = "white", col = "grey"),
+        )
+    >>>>>>> f413700f6c7df6c716ebc92c127e7962d18e4606
     grid.newpage()
     h <- grobHeight(table)
     w <- grobWidth(table)
@@ -171,7 +178,7 @@ getting_lga_graph <- function(current_shp_fortify, current_facilities,
     
     lga_name <- current_shp_fortify$id[1]
     osm_map <- get_osm_map(bbox_data)
-        
+    
     plot <- autoplot(osm_map, expand=F) + 
         geom_point(data=current_facilities, 
                    aes(x=long, y=lat), 
@@ -203,7 +210,7 @@ getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify,
     text_df <- subset(current_facilities, 
                       !duplicated(seriel_ID),
                       select = c("long", "lat", "seriel_ID"))
-
+    
     plot <- autoplot(osm_map, expand=F) + 
         geom_polygon(data=current_shp_fortify, 
                      aes(x=long, y=lat, group=group), 
@@ -223,8 +230,8 @@ getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify,
               panel.background = element_blank()) +
         coord_fixed(ratio=1, xlim=c(current_bbox_df$x_min - x_margin, 
                                     current_bbox_df$x_max + x_margin),
-                            ylim=c(current_bbox_df$y_min - y_margin, 
-                                    current_bbox_df$y_max + y_margin)) +   
+                    ylim=c(current_bbox_df$y_min - y_margin, 
+                           current_bbox_df$y_max + y_margin)) +   
         labs(title = paste('Map of Area', 
                            current_bbox_df$word, sep=' ')) +
         xlab("Longitude") + ylab("Latitude")
@@ -374,5 +381,4 @@ break_data_grid_print <- function(df, title_name, page_limit = 55){
 # })
 # 
 # dev.off()
-
 
