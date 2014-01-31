@@ -11,8 +11,6 @@ require(xtable)
 require(gridExtra)
 require(RANN)
 
-### 16inch in height corresponding to 55 line table + title
-
 
 wgs84 <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 nga_shp <- readShapeSpatial("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/raw_data/nga_lgas/nga_lgas_with_corrected_id.shp", proj4string=wgs84)
@@ -145,7 +143,7 @@ grid_table_assemble <- function(df, title_name){
     grid.draw(gt)
 }
 
-break_data_grid_print <- function(df, title_name, page_limit = 55){
+break_data_grid_print <- function(df, title_name, page_limit = 38) {
     table_length <- nrow(df)
     if(table_length <= page_limit){
         grid_table_assemble(df, title_name)
@@ -200,15 +198,15 @@ getting_lga_graph <- function(current_shp_fortify, current_facilities,
 # Plotting area zoom in level
 getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify, 
                                  current_facilities, grid_lines) {
-    
+    TEXT_OFFSET <- 0.001
     osm_map <- get_osm_map(current_bbox_df)
     x_margin <- (current_bbox_df$x_max - current_bbox_df$x_min)*0.025
     y_margin <- (current_bbox_df$y_max - current_bbox_df$y_min)*0.025
     
-    text_df <- subset(current_facilities, 
-                      !duplicated(serial_ID),
-                      select = c("long", "lat", "serial_ID"))
-
+    
+    text_df <- ddply(current_facilities, .(serial_ID),
+                     summarize, clong=mean(long), clat=mean(lat))
+    
     plot <- autoplot(osm_map, expand=F) + 
         geom_polygon(data=current_shp_fortify, 
                      aes(x=long, y=lat, group=group), 
@@ -219,7 +217,7 @@ getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify,
         geom_vline(xintercept = grid_lines$x, linetype="dotted", size=1) + 
         geom_hline(yintercept = grid_lines$y, linetype="dotted", size=1) +
         geom_text(data=text_df, 
-                  aes(x=long, y=lat, label=serial_ID),
+                  aes(x=clong, y=clat + TEXT_OFFSET, label=serial_ID),
                   color='black', size=3, vjust=0) + 
         geom_text(data=bbox_data, 
                   aes(x=x_center, y=y_center, label=word),
@@ -267,7 +265,7 @@ lga_viz <- function(current_shp, current_facilities, current_missing){
     current_shp_fortify <- fortify(current_shp, region="Name")
     grid_lines <- get_grids(current_shp)
     bbox_data <- get_grid_zoomin_bbox(grid_lines)
-    current_facilities <- facility_get_serial_ID(current_facilities)
+    current_facilities <- facility_get_serial_ID(current_facilities, .01)
     
     # print lga level map of current lga
     getting_lga_graph(current_shp_fortify, current_facilities,
@@ -306,7 +304,7 @@ getting_zoomin_graph(current_bbox_df, current_shp_fortify,
 
 # single lga level 
 
-pdf("./lga1.pdf", width = 13, height = 16)
+pdf("./lga1.pdf", width = 11, height = 8.5)
 lga_viz(current_shp, current_facilities, current_missing)
 dev.off()
 
