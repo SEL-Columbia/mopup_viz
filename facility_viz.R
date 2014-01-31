@@ -39,6 +39,7 @@ nmis_edu <- subset(nmis_edu, select=c("facility_name", "community", "ward", "lat
 current_shp <- subset(nga_shp, lga_id == "2")
 current_shp_fortify <- fortify(current_shp, region="Name")
 current_facilities <- subset(nmis_edu, lga_id == "2")
+current_facilities <- rbind.fill(current_facilities, current_facilities)
 current_missing <- subset(missing_edu, lga_id == "2")
 
 
@@ -78,18 +79,7 @@ get_grid_zoomin_bbox <- function(grid_df){
   bbox_df$word <- 1:nrow(bbox_df)
   return(bbox_df)
 }
-
-# download map img from osm
-# get_osm_map <- function(current_shp){
-#   
-#     map <- openmap(upperLeft=c(lat = current_shp@bbox["y","max"], 
-#                              lon=current_shp@bbox["x","min"]), 
-#                  lowerRight=c(lat = current_shp@bbox["y","min"], 
-#                               lon=current_shp@bbox["x","max"]),
-#                  type="osm", minNumTiles=5)
-#     map <- openproj(map) 
-#     return(map)
-# }                                     
+                   
 
 # download ZOOM IN map img from osm
 get_osm_map <- function(current_bbox_df, tile_level = 5){
@@ -138,17 +128,13 @@ facility_subset_griddf <- function(current_bbox_df, current_facilities_seriel_ad
     
     if (nrow(current_facilities_seriel_added) > 0){
         title_name <- paste("Facilities that already surveyed in Area -", map_num, sep=' ')
-        grid_table_assemble(current_facilities_seriel_added, title_name)
+        break_data_grid_print(current_facilities_seriel_added, title_name)
     }
     
 }
 
 #### turn to-go-list into functions
-
-
-
 grid_table_assemble <- function(df, title_name){
-<<<<<<< HEAD
     table <- tableGrob(df, show.rownames = FALSE, row.just = "left",
                        col.just = "left", core.just="left", 
                        gpar.corefill = gpar(fill = "white", col = "grey"),
@@ -162,7 +148,27 @@ grid_table_assemble <- function(df, title_name){
     grid.draw(gt)
 }
 
-
+break_data_grid_print <- function(df, title_name, page_limit = 55){
+    table_length <- nrow(df)
+    if(table_length <= page_limit){
+        grid_table_assemble(df, title_name)
+    }else{
+        pages <- (floor(table_length/page_limit) + 1)
+        df_break_buffer <- vector(mode="list", pages)
+        table_length %% page_limit
+        for(p in 1:pages){
+            if(p != pages[length(pages)]){
+                df_break_buffer[[p]] <- df[(55*(p-1)+1): (55*(p-1)+55),]
+                grid_table_assemble(df_break_buffer[[p]], title_name)
+                
+            }else{
+                df_break_buffer[[p]] <- df[(55*(p-1)+1): table_length,]
+                grid_table_assemble(df_break_buffer[[p]], title_name)
+                
+            }
+        }
+    }
+}
 
 
 # Plotting lga level
@@ -191,6 +197,8 @@ getting_lga_graph <- function(current_shp_fortify, current_facilities,
         xlab("Longitude") + ylab("Latitude")
     print(plot)
 }
+
+
 
 # Plotting area zoom in level
 getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify, 
@@ -298,7 +306,8 @@ lga_viz <- function(current_shp, current_facilities, current_missing){
     if (nrow(current_missing) > 0){
         lga_name <- current_shp_fortify$id[1]
         title_name <- paste("Facilities that need to be surveyed -", lga_name, sep=' ')
-        grid_table_assemble(current_missing, title_name)
+        break_data_grid_print(current_missing, title_name)
+        
     }
     
     
@@ -338,28 +347,10 @@ dev.off()
 title_name <- paste("Facilities that already surveyed in Area -", map_num, sep=' ')
 grid_table_assemble(current_facilities_seriel_added, title_name)
 
-df <- current_facilities_seriel_added
+df <- current_facilities
 p <- 1
 
-break_data_grid_print <- function(df, title_name, page_limit = 55){
-    table_length <- nrow(df)
-    (if table_length <= page_limit){
-        grid_table_assemble(df, title_name)
-    }else{
-        pages <- (floor(table_length/page_limit) + 1)
-        df_break_buffer <- vector(mode="list", pages)
-        table_length %% page_limit
-        (for p in pages){
-            (if p != pages[length(pages)]){
-                df_break_buffer[p] <- df[(55*(p-1)+1): (55*(p-1)+55),]
-                
-            }else{
-                df_break_buffer[p] <- df[(55*(p-1)+1): table_length,]
-            }
-            
-        }
-    }
-}
+
 
 
 
