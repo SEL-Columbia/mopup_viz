@@ -167,39 +167,45 @@ getting_lga_graph <- function(current_shp_fortify, current_facilities, bbox_data
 # Plotting area zoom in level
 getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify, 
                                  current_facilities, grid_lines) {
-    osm_map <- get_osm_map(current_bbox_df)
-    x_margin <- (current_bbox_df$x_max - current_bbox_df$x_min)*0.025
-    y_margin <- (current_bbox_df$y_max - current_bbox_df$y_min)*0.025
+    current_facilities <- with(current_bbox_df, 
+                               subset(current_facilities, 
+                                      long >= x_min & long <= x_max & lat >= y_min & lat <= y_max))
+    if(nrow(current_facilities) > 0) {
     
-    text_df <- ddply(current_facilities, .(serial_ID),
-                     summarize, clong=mean(long), clat=mean(lat) )
-    
-    plot <- autoplot(osm_map, expand=F) + 
-        geom_polygon(data=current_shp_fortify, 
-                     aes(x=long, y=lat, group=group), 
-                     fill='black', color='black', alpha=0.05) + 
-        geom_point(data=current_facilities, 
-                   aes(x=long, y=lat), 
-                   color=I('red'), size=3, alpha=0.6) + 
-        geom_vline(xintercept = grid_lines$x, linetype="dotted", size=1) + 
-        geom_hline(yintercept = grid_lines$y, linetype="dotted", size=1) +
-        geom_text(data=text_df, 
-                  aes(x=clong, y=clat + .001, label=serial_ID),
-                  # + .001 is a text offset for clarity
-                  color='black', size=3, vjust=0) + 
-        geom_text(data=current_bbox_df, 
-                  aes(x=x_center, y=y_center, label=word),
-                  size=11, color='blue', alpha=0.3) + 
-        theme(panel.grid=element_blank(),
-              panel.background = element_blank()) +
-        coord_fixed(ratio=1, xlim=c(current_bbox_df$x_min - x_margin, 
-                                    current_bbox_df$x_max + x_margin),
-                            ylim=c(current_bbox_df$y_min - y_margin, 
-                                    current_bbox_df$y_max + y_margin)) +   
-        labs(title = paste('Map of Area', 
-                           current_bbox_df$word, sep=' ')) +
-        xlab("Longitude") + ylab("Latitude")
-    print(plot)
+        osm_map <- get_osm_map(current_bbox_df)
+        x_margin <- (current_bbox_df$x_max - current_bbox_df$x_min)*0.025
+        y_margin <- (current_bbox_df$y_max - current_bbox_df$y_min)*0.025
+        
+        text_df <- ddply(current_facilities, .(serial_ID),
+                         summarize, clong=mean(long), clat=mean(lat) )
+        
+        plot <- autoplot(osm_map, expand=F) + 
+            geom_polygon(data=current_shp_fortify, 
+                         aes(x=long, y=lat, group=group), 
+                         fill='black', color='black', alpha=0.05) + 
+            geom_point(data=current_facilities, 
+                       aes(x=long, y=lat), 
+                       color=I('red'), size=3, alpha=0.6) + 
+            geom_vline(xintercept = grid_lines$x, linetype="dotted", size=1) + 
+            geom_hline(yintercept = grid_lines$y, linetype="dotted", size=1) +
+            geom_text(data=text_df, 
+                      aes(x=clong, y=clat + .001, label=serial_ID),
+                      # + .001 is a text offset for clarity
+                      color='black', size=3, vjust=0) + 
+            geom_text(data=current_bbox_df, 
+                      aes(x=x_center, y=y_center, label=word),
+                      size=11, color='blue', alpha=0.3) + 
+            theme(panel.grid=element_blank(),
+                  panel.background = element_blank()) +
+            coord_fixed(ratio=1, xlim=c(current_bbox_df$x_min - x_margin, 
+                                        current_bbox_df$x_max + x_margin),
+                                ylim=c(current_bbox_df$y_min - y_margin, 
+                                        current_bbox_df$y_max + y_margin)) +   
+            labs(title = paste('Map of Area', 
+                               current_bbox_df$word, sep=' ')) +
+            xlab("Longitude") + ylab("Latitude")
+        print(plot)
+    }
 }
 
 ### helper function to create proper serial_ID for solving near points issue
