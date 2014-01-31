@@ -11,45 +11,37 @@ require(xtable)
 require(gridExtra)
 require(RANN)
 
-
-wgs84 <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-nga_shp <- readShapeSpatial("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/raw_data/nga_lgas/nga_lgas_with_corrected_id.shp", proj4string=wgs84)
-
-# missing facility list data processing
-missing_edu <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/mop_up_matching_result/facility_missing_list_edu.csv")
-missing_health <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/mop_up_matching_result/facility_missing_list_health.csv")
-
-missing_edu <- subset(missing_edu, 
-                     select=c("short_id", "facility_name", "ward",
-                              "community", "facility_type", "lga_id"))
-missing_health <- subset(missing_health, 
-                      select=c("short_id", "facility_name", "ward",
-                               "community", "facility_type", "lga_id"))
-
-# nmis data processing
-nmis_edu <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/nmis/data_774/Education_774_NMIS_Facility.csv")
-nmis_edu$lat <- as.numeric(lapply(str_split(nmis_edu$gps, " "), function(x) x[1]))
-nmis_edu$long <- as.numeric(lapply(str_split(nmis_edu$gps, " "), function(x) x[2]))
-nmis_edu <- subset(nmis_edu, select=c("facility_name", "community", "ward", "lat", "long",
-                                    "facility_ID", "facility_type", "lga_id"))
+# RUN MakeData.R if you haven't already; these files are generated there
+missing_edu <- readRDS("data/MissingEducationFacilities.rds")
+missing_health <- readRDS("data/MissingHealthFacilities.rds")
+nmis_edu <- readRDS("data/NMISEducationFacilities.rds")
+nmis_health <- readRDS("data/NMISHealthFacilities.rds")
+nga_shp <- readRDS("data/NGALGAS_shp.rds")
+nga_shp_fortified <- readRDS("data/NGALGAS_fortified.rds")
 
 # # current lga data subsetting
-current_shp <- subset(nga_shp, lga_id == "2")
-current_shp_fortify <- fortify(current_shp, region="Name")
-current_facilities <- subset(nmis_edu, lga_id == "2")
-current_facilities <- rbind.fill(current_facilities, current_facilities)
-current_missing <- subset(missing_edu, lga_id == "2")
+get_data_for_current_lga = function(LGA_ID) {
+    shp = subset(nga_shp, lga_id==LGA_ID)
+    list(
+        missing_edu = subset(missing_edu, lga_id==LGA_ID),
+        missing_health = subset(missing_health, lga_id==LGA_ID),
+        nmis_edu = subset(nmis_edu, lga_id==LGA_ID),
+        nmis_health = subset(nmis_health, lga_id==LGA_ID),
+        shp = shp,
+        shp_fortified = subset(nga_shp_fortified, lga_id==LGA_ID),
+        name = shp$Name
+    )
+}
 
-
-
-### getting grid line coordinates
-get_grids <- function(current_shp){
+### Given shapefile, break it up into a grid.
+# Grid size will be approx: xwidth X ywidth (defaulted to 0.2)
+get_grids <- function(current_shp, xwidth=0.2, ywidth=0.2){
     
     y <- current_shp@bbox["y","max"] - current_shp@bbox["y","min"]
     x <- current_shp@bbox["x","max"] - current_shp@bbox["x","min"]
         
-    nrow <- round(y / 0.2) + 1
-    ncol <- round(x / 0.2) + 1
+    nrow <- round(y / xwidth) + 1
+    ncol <- round(x / ywidth) + 1
     
     grid_x <- seq(current_shp@bbox['x', 'min'], 
                     current_shp@bbox['x', 'max'], length.out=ncol)
@@ -62,7 +54,7 @@ get_grids <- function(current_shp){
 
 ### Starting with grid_df a list, x=x-intercept vector, y=y-intercept vector
 ## generates x_min x_max y_min y_max x_center y_center word
-get_grid_zoomin_bbox <- function(grid_df){
+get_grid_zoomin_bbox <- function(grid_df) {
   x <- grid_df$x
   y <- grid_df$y
   x_coor <- data.frame(x_min = x[1:length(x)-1], 
@@ -100,11 +92,10 @@ facility_subset_griddf <- function(current_bbox_df, current_facilities_serial_ad
     y_min <- current_bbox_df$y_min
     y_max <- current_bbox_df$y_max
     map_num <- current_bbox_df$word
-    
     current_facilities_serial_added <- subset(current_facilities_serial_added, ( 
                                     long >= x_min & long <= x_max &
                                     lat >= y_min & lat <= y_max),
-                                    select = c("serial_ID", "facility_name", 
+                                    select = c("serial_ID", "facility_name",
                                                "community", "ward", "facility_type",
                                                "facility_ID"))
     current_facilities_serial_added$map <- rep(map_num, nrow(current_facilities_serial_added))
@@ -121,8 +112,7 @@ facility_subset_griddf <- function(current_bbox_df, current_facilities_serial_ad
                                                         "community" = "COMMUNITY",
                                                         "facility_type" = "TYPE",
                                                         "facility_ID" = "FACILITY_ID"))
-    
-    if (nrow(current_facilities_serial_added) > 0){
+    if (nrow(current_facilities_serial_added) > 0) {
         title_name <- paste("Facilities that already surveyed in Area -", map_num, sep=' ')
         break_data_grid_print(current_facilities_serial_added, title_name)
     }
@@ -133,7 +123,7 @@ grid_table_assemble <- function(df, title_name){
     table <- tableGrob(df, show.rownames = FALSE, row.just = "left",
                        col.just = "left", core.just="left", 
                        gpar.corefill = gpar(fill = "white", col = "grey"),
-                       gpar.coretext  = gpar(fontsize = 10,col="black"))
+                       gpar.coretext  = gpar(fontsize = 10, col="black"))
     grid.newpage()
     h <- grobHeight(table)
     w <- grobWidth(table)
@@ -143,32 +133,16 @@ grid_table_assemble <- function(df, title_name){
     grid.draw(gt)
 }
 
-break_data_grid_print <- function(df, title_name, page_limit = 38) {
-    table_length <- nrow(df)
-    if(table_length <= page_limit){
-        grid_table_assemble(df, title_name)
-    }else{
-        pages <- (floor(table_length/page_limit) + 1)
-        df_break_buffer <- vector(mode="list", pages)
-        table_length %% page_limit
-        for(p in 1:pages){
-            if(p != pages[length(pages)]){
-                df_break_buffer[[p]] <- df[(55*(p-1)+1): (55*(p-1)+55),]
-                grid_table_assemble(df_break_buffer[[p]], title_name)
-                
-            }else{
-                df_break_buffer[[p]] <- df[(55*(p-1)+1): table_length,]
-                grid_table_assemble(df_break_buffer[[p]], title_name)
-                
-            }
-        }
-    }
+break_data_grid_print <- function(df, title_name, page_limit = 30) {
+    df$splitter <- cut_interval(1:nrow(df), length=page_limit)
+    d_ply(df, .(splitter), function(df) {
+        grid_table_assemble(subset(df,select=-c(splitter)), title_name)
+    })
 }
-
 
 # Plotting lga level
 getting_lga_graph <- function(current_shp_fortify, current_facilities, 
-                              bbox_data, grid_lines){
+                              bbox_data, grid_lines) {
     
     lga_name <- current_shp_fortify$id[1]
     osm_map <- get_osm_map(bbox_data)
@@ -198,14 +172,12 @@ getting_lga_graph <- function(current_shp_fortify, current_facilities,
 # Plotting area zoom in level
 getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify, 
                                  current_facilities, grid_lines) {
-    TEXT_OFFSET <- 0.001
     osm_map <- get_osm_map(current_bbox_df)
     x_margin <- (current_bbox_df$x_max - current_bbox_df$x_min)*0.025
     y_margin <- (current_bbox_df$y_max - current_bbox_df$y_min)*0.025
     
-    
     text_df <- ddply(current_facilities, .(serial_ID),
-                     summarize, clong=mean(long), clat=mean(lat))
+                     summarize, clong=mean(long), clat=mean(lat) )
     
     plot <- autoplot(osm_map, expand=F) + 
         geom_polygon(data=current_shp_fortify, 
@@ -217,9 +189,10 @@ getting_zoomin_graph <- function(current_bbox_df, current_shp_fortify,
         geom_vline(xintercept = grid_lines$x, linetype="dotted", size=1) + 
         geom_hline(yintercept = grid_lines$y, linetype="dotted", size=1) +
         geom_text(data=text_df, 
-                  aes(x=clong, y=clat + TEXT_OFFSET, label=serial_ID),
+                  aes(x=clong, y=clat + .001, label=serial_ID),
+                  # + .001 is a text offset for clarity
                   color='black', size=3, vjust=0) + 
-        geom_text(data=bbox_data, 
+        geom_text(data=current_bbox_df, 
                   aes(x=x_center, y=y_center, label=word),
                   size=11, color='blue', alpha=0.3) + 
         theme(panel.grid=element_blank(),
@@ -260,75 +233,34 @@ facility_get_serial_ID <- function(fac, DIST_THRESHOLD=0.0012) {
 }
 
 # Creating master function to plot lga overview + zoomin level all at once
-lga_viz <- function(current_shp, current_facilities, current_missing){
-    
-    current_shp_fortify <- fortify(current_shp, region="Name")
-    grid_lines <- get_grids(current_shp)
+lga_viz <- function(lga_data) {
+    grid_lines <- get_grids(lga_data$shp)
     bbox_data <- get_grid_zoomin_bbox(grid_lines)
-    current_facilities <- facility_get_serial_ID(current_facilities, .01)
+    current_facilities <- facility_get_serial_ID(lga_data$nmis_edu, .01)
     
     # print lga level map of current lga
-    getting_lga_graph(current_shp_fortify, current_facilities,
-                      bbox_data, grid_lines)
-    # print missing facility list of current lga
-    if (nrow(current_missing) > 0){
-        lga_name <- current_shp_fortify$id[1]
-        title_name <- paste("Facilities that need to be surveyed -", lga_name, sep=' ')
-        break_data_grid_print(current_missing, title_name)
-        
-    }
+    getting_lga_graph(lga_data$shp_fortified, lga_data$nmis_edu, bbox_data, grid_lines)
     
+    # print missing facility list of current lga
+    if (nrow(lga_data$missing_edu) > 0){
+        lga_name <- lga_data$name
+        title_name <- paste("Education Facilities that need to be surveyed -", lga_name, sep=' ')
+        break_data_grid_print(lga_data$missing_edu, title_name)
+    }
     
     # zoomin starts here
     d_ply(bbox_data, .(word), function(df) {
         # print zoomin small map
-        getting_zoomin_graph(df, current_shp_fortify,
-                             current_facilities, grid_lines)
+        getting_zoomin_graph(df, lga_data$shp_fortified,
+                            current_facilities, grid_lines)
         # print NOT TO GO list of the small map
         facility_subset_griddf(df, current_facilities)
     })
 }
 
-# Below chunk is for testing only
-grid_lines <- get_grids(current_shp)
-bbox_data <- get_grid_zoomin_bbox(grid_lines)
-lga_name <- current_shp_fortify$id[1]
-
-current_bbox_df <- subset(bbox_data, word == "1")
-
-getting_lga_graph(current_shp_fortify, current_facilities, bbox_data, grid_lines)
-
-getting_zoomin_graph(current_bbox_df, current_shp_fortify,
-                     current_facilities, grid_lines)
-
-
-# single lga level 
-
-pdf("./lga1.pdf", width = 11, height = 8.5)
-lga_viz(current_shp, current_facilities, current_missing)
-dev.off()
-
-
-title_name <- paste("Facilities that already surveyed in Area -", map_num, sep=' ')
-grid_table_assemble(current_facilities_serial_added, title_name)
-
-df <- current_facilities
-p <- 1
-
-
-
-
-
-######
-
-### The BIG Loop
-# pdf("./all_lgas.pdf")
-# 
-# d_ply(facilities, .(lga_id), function(df){
-#   current_shp <- subset(nga_shp, lga_id == df$lga_id[1])
-#   lga_viz(current_shp, df)
-# })
-# 
-# dev.off()
-
-
+to_pdf <- function(LGA_ID) {
+    lga_data <- get_data_for_current_lga(LGA_ID)
+    pdf(paste0('pdfs/', lga_data$name, '.pdf'), width = 11, height = 8.5)
+    lga_viz(lga_data)
+    dev.off()    
+}
