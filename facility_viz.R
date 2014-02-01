@@ -56,8 +56,10 @@ get_grids <- function(current_shp){
     x <- current_shp@bbox["x","max"] - current_shp@bbox["x","min"]
     
     size <- smart_width(x, y)
-    nrow <- round(y / size) + 1
-    ncol <- round(x / size) + 1
+    nrow <- ifelse(round(y / size) == 0, 2,
+                   round(y / size) + 1) 
+    ncol <- ifelse(round(x / size) == 0, 2,
+                   round(x / size)+ 1)
     
     grid_x <- seq(current_shp@bbox['x', 'min'], 
                     current_shp@bbox['x', 'max'], length.out=ncol)
@@ -310,8 +312,8 @@ lga_viz <- function(lga_data) {
 
 # quick fix for handling lga_name like "Abua/Odual" which screws output file
 lga_names_fixer <- function(name){
-    if (str_detect(name, "/")){
-        return(str_replace_all(name, pattern="/", "_"))
+    if (str_detect(name, "[ \t/]")){
+        return(str_replace_all(name, pattern="[ \t/]+", "_"))
     }else{
         return(name)
     }
