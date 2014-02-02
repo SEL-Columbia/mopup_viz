@@ -91,19 +91,26 @@ get_grid_zoomin_bbox <- function(grid_df) {
 
 # download ZOOM IN map img from osm
 get_osm_map <- function(current_bbox_df, tile_level = 5){
-    
-    n <- dim(current_bbox_df)[1]
-    
-    x_margin <- (current_bbox_df$x_max[n] - current_bbox_df$x_min[1]) * 0.025
-    y_margin <- (current_bbox_df$y_max[n] - current_bbox_df$y_min[1]) * 0.025
-    
-    map <- openmap(upperLeft=c(lat = current_bbox_df$y_max[n] + y_margin, 
-                               lon = current_bbox_df$x_min[1] - x_margin), 
-                   lowerRight=c(lat = current_bbox_df$y_min[1] - y_margin, 
-                                lon = current_bbox_df$x_max[n] + x_margin),
-                   type="osm", minNumTiles = tile_level)
-    map <- openproj(map) 
-    return(map)
+    cache_file <- sprintf("%s/%s/%s.rds",
+                           BASE_DIR, "map_cache", 
+                            paste(current_bbox_df, collapse="-"))
+    if(file.exists(cache_file)) {
+        return(readRDS(cache_file))
+    } else {
+        n <- dim(current_bbox_df)[1]
+        
+        x_margin <- (current_bbox_df$x_max[n] - current_bbox_df$x_min[1]) * 0.025
+        y_margin <- (current_bbox_df$y_max[n] - current_bbox_df$y_min[1]) * 0.025
+        
+        map <- openmap(upperLeft=c(lat = current_bbox_df$y_max[n] + y_margin, 
+                                   lon = current_bbox_df$x_min[1] - x_margin), 
+                       lowerRight=c(lat = current_bbox_df$y_min[1] - y_margin, 
+                                    lon = current_bbox_df$x_max[n] + x_margin),
+                       type="osm", minNumTiles = tile_level)
+        map <- openproj(map)
+        saveRDS(map, cache_file)
+        return(map)
+    }
 }                                     
 
 facility_subset_griddf <- function(current_bbox_df, current_facilities_serial_added, title) {
