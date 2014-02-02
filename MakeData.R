@@ -89,7 +89,7 @@ nmis_edu <- length_fix(nmis_edu)
 saveRDS(nmis_edu, "data/NMISEducationFacilities.rds")
 
 nmis_health <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/nmis/data_774/Health_774_NMIS_Facility.csv",
-                        stringsAsFactors=FALSE))
+                        stringsAsFactors=FALSE)
 nmis_health <- cbind(nmis_health, gps_explode(nmis_health$gps))
 nmis_health <- subset(nmis_health, select=c(names(renamelist_nmis), c("lga_id", "lat", "long")))
 nmis_health <- rename(nmis_health, renamelist_nmis)
