@@ -16,18 +16,17 @@ saveRDS(nga_shp_fortify, "data/NGALGAS_fortified.rds")
 
 #### Helper function for truncate excessive long strings in columns
 length_fix <- function(df){
-    df$NAME <- ifelse( (str_length(df$NAME) <= 50),
-                       str_length(df$NAME),
-                       substr(df$NAME, 1, 50))
+    df$NAME <- ifelse( str_length(df$NAME) <= 50,
+                       df$NAME,
+                       str_sub(df$NAME, 1, 50))
     
-    df$WARD <- ifelse( (str_length(df$WARD) <= 20),
-                       str_length(df$WARD),
-                       substr(df$WARD, 1, 20))
+    df$WARD <- ifelse( str_length(df$WARD) <= 20,
+                       df$WARD,
+                       str_sub(df$WARD, 1, 20))
     
-    df$COMMUNITY <- ifelse( (str_length(df$COMMUNITY) <= 20),
-                            str_length(df$COMMUNITY),
+    df$COMMUNITY <- ifelse( str_length(df$COMMUNITY) <= 20,
+                            df$COMMUNITY,
                             substr(df$COMMUNITY, 1, 20))
-    
     return(df)    
 }
 
@@ -80,7 +79,8 @@ renamelist_nmis <- c("facility_ID" = "UID", "facility_name" = "NAME",
                         "facility_type" = "TYPE",
                         "ward" = "WARD", "community" = "COMMUNITY")
 
-nmis_edu <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/nmis/data_774/Education_774_NMIS_Facility.csv")
+nmis_edu <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/nmis/data_774/Education_774_NMIS_Facility.csv",
+                     stringsAsFactors=FALSE)
 nmis_edu <- cbind(nmis_edu, gps_explode(nmis_edu$gps))
 nmis_edu <- subset(nmis_edu, select=c(names(renamelist_nmis), c("lga_id", "lat", "long")))
 nmis_edu <- rename(nmis_edu, renamelist_nmis)
@@ -88,7 +88,8 @@ nmis_edu$TYPE <- revalue(nmis_edu$TYPE, edu_type_revalue)
 nmis_edu <- length_fix(nmis_edu)
 saveRDS(nmis_edu, "data/NMISEducationFacilities.rds")
 
-nmis_health <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/nmis/data_774/Health_774_NMIS_Facility.csv")
+nmis_health <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/nmis/data_774/Health_774_NMIS_Facility.csv",
+                        stringsAsFactors=FALSE))
 nmis_health <- cbind(nmis_health, gps_explode(nmis_health$gps))
 nmis_health <- subset(nmis_health, select=c(names(renamelist_nmis), c("lga_id", "lat", "long")))
 nmis_health <- rename(nmis_health, renamelist_nmis)
