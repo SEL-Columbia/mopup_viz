@@ -114,23 +114,18 @@ facility_subset_griddf <- function(current_bbox_df, current_facilities_serial_ad
     current_facilities_serial_added <- subset(current_facilities_serial_added, ( 
                                     long >= x_min & long <= x_max &
                                     lat >= y_min & lat <= y_max),
-                                    select = c("serial_ID", "facility_name",
-                                               "community", "ward", "facility_type",
-                                               "facility_ID"))
+                                    select = c("serial_ID", "NAME",
+                                               "COMMUNITY", "WARD", "TYPE",
+                                               "UID"))
     current_facilities_serial_added$map <- rep(map_num, nrow(current_facilities_serial_added))
     current_facilities_serial_added <- current_facilities_serial_added[,c("map", "serial_ID",
-                                                                          "facility_name", "ward", 
-                                                                          "community", "facility_type",
-                                                                          "facility_ID")]
+                                                                          "NAME", "WARD", 
+                                                                          "COMMUNITY", "TYPE",
+                                                                          "UID")]
     current_facilities_serial_added <- arrange(current_facilities_serial_added, serial_ID)
     current_facilities_serial_added <- rename(current_facilities_serial_added, 
                                               replace=c("map" = "MAP",
-                                                        "serial_ID" = "ID#",
-                                                        "facility_name" = "NAME",
-                                                        "ward" = "WARD",
-                                                        "community" = "COMMUNITY",
-                                                        "facility_type" = "TYPE",
-                                                        "facility_ID" = "FACILITY_ID"))
+                                                        "serial_ID" = "ID#"))
     if (nrow(current_facilities_serial_added) > 0) {
         break_data_grid_print(current_facilities_serial_added, title)
     }
@@ -322,7 +317,8 @@ lga_names_fixer <- function(name){
 
 to_pdf <- function(LGA_ID) {
     lga_data <- get_data_for_current_lga(LGA_ID)
-    pdf(sprintf('pdfs/%s_%s.pdf', LGA_ID, lga_names_fixer(lga_data$name)),
+    BASE_DIR <- "~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/mop_up_viz_output"
+    pdf(sprintf('%s/pdfs/%s_%s.pdf', BASE_DIR, LGA_ID, lga_names_fixer(lga_data$name)),
         width = 11, height = 8.5)
     lga_viz(lga_data)
     dev.off()    

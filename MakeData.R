@@ -13,6 +13,24 @@ saveRDS(nga_shp, "data/NGALGAS_shp.rds")
 saveRDS(nga_shp_fortify, "data/NGALGAS_fortified.rds")
 
 
+
+#### Helper function for truncate excessive long strings in columns
+length_fix <- function(df){
+    df$NAME <- ifelse( (str_length(df$NAME) <= 50),
+                       str_length(df$NAME),
+                       substr(df$NAME, 1, 50))
+    
+    df$WARD <- ifelse( (str_length(df$WARD) <= 20),
+                       str_length(df$WARD),
+                       substr(df$WARD, 1, 20))
+    
+    df$COMMUNITY <- ifelse( (str_length(df$COMMUNITY) <= 20),
+                            str_length(df$COMMUNITY),
+                            substr(df$COMMUNITY, 1, 20))
+    
+    return(df)    
+}
+
 #### REVALUE
 edu_type_revalue <- c("adult_ed"="Adult", "adult_lit"="Adult", 
                       "adult_vocational"="Adult", "js"="JS", "js_ss"="JS + SS", 
@@ -41,6 +59,10 @@ missing_health <- subset(missing_health,
                       select=c(names(renamelist_missing), "lga_id"))
 missing_edu <- rename(missing_edu, renamelist_missing)
 missing_health <- rename(missing_health, renamelist_missing)
+
+missing_edu <- length_fix(missing_edu)
+missing_health <- length_fix(missing_health)
+
 saveRDS(missing_edu, "data/MissingEducationFacilities.rds")
 saveRDS(missing_health, "data/MissingHealthFacilities.rds")
 
@@ -61,11 +83,14 @@ renamelist_nmis <- c("facility_ID" = "UID", "facility_name" = "NAME",
 nmis_edu <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/nmis/data_774/Education_774_NMIS_Facility.csv")
 nmis_edu <- cbind(nmis_edu, gps_explode(nmis_edu$gps))
 nmis_edu <- subset(nmis_edu, select=c(names(renamelist_nmis), c("lga_id", "lat", "long")))
-#nmis_edu <- rename(nmis_edu, renamelist_nmis)
+nmis_edu <- rename(nmis_edu, renamelist_nmis)
+nmis_edu$TYPE <- revalue(nmis_edu$TYPE, edu_type_revalue)
+nmis_edu <- length_fix(nmis_edu)
 saveRDS(nmis_edu, "data/NMISEducationFacilities.rds")
 
 nmis_health <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/nmis/data_774/Health_774_NMIS_Facility.csv")
 nmis_health <- cbind(nmis_health, gps_explode(nmis_health$gps))
 nmis_health <- subset(nmis_health, select=c(names(renamelist_nmis), c("lga_id", "lat", "long")))
-#nmis_health <- rename(nmis_health, renamelist_nmis)
+nmis_health <- rename(nmis_health, renamelist_nmis)
+nmis_health <- length_fix(nmis_health)
 saveRDS(nmis_health, "data/NMISHealthFacilities.rds")
