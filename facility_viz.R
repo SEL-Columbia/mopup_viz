@@ -1,14 +1,10 @@
-require(RColorBrewer)
-require(ggplot2)
-require(plyr)
-require(stringr)
-require(rgeos)
-require(ggmap)
-require(RgoogleMaps)
-require(OpenStreetMap)
-require(xtable)
-require(gridExtra)
-require(RANN)
+
+require(ggplot2, quietly=T)
+require(plyr, quietly=T)
+require(stringr, quietly=T)
+require(OpenStreetMap, quietly=T)
+require(gridExtra, quietly=T)
+require(RANN, quietly=T)
 
 # RUN MakeData.R if you haven't already; these files are generated there
 missing_edu <- readRDS("data/MissingEducationFacilities.rds")
@@ -93,7 +89,7 @@ get_grid_zoomin_bbox <- function(grid_df) {
 get_osm_map <- function(current_bbox_df, tile_level = 5){
     cache_file <- sprintf("%s/%s/%s.rds",
                            BASE_DIR, "map_cache", 
-                            paste(current_bbox_df, collapse="-"))
+                            paste(unlist(current_bbox_df), collapse="-"))
     if(file.exists(cache_file)) {
         return(readRDS(cache_file))
     } else {
