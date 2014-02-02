@@ -114,23 +114,18 @@ facility_subset_griddf <- function(current_bbox_df, current_facilities_serial_ad
     current_facilities_serial_added <- subset(current_facilities_serial_added, ( 
                                     long >= x_min & long <= x_max &
                                     lat >= y_min & lat <= y_max),
-                                    select = c("serial_ID", "facility_name",
-                                               "community", "ward", "facility_type",
-                                               "facility_ID"))
+                                    select = c("serial_ID", "NAME",
+                                               "COMMUNITY", "WARD", "TYPE",
+                                               "UID"))
     current_facilities_serial_added$map <- rep(map_num, nrow(current_facilities_serial_added))
     current_facilities_serial_added <- current_facilities_serial_added[,c("map", "serial_ID",
-                                                                          "facility_name", "ward", 
-                                                                          "community", "facility_type",
-                                                                          "facility_ID")]
+                                                                          "NAME", "WARD", 
+                                                                          "COMMUNITY", "TYPE",
+                                                                          "UID")]
     current_facilities_serial_added <- arrange(current_facilities_serial_added, serial_ID)
     current_facilities_serial_added <- rename(current_facilities_serial_added, 
                                               replace=c("map" = "MAP",
-                                                        "serial_ID" = "ID#",
-                                                        "facility_name" = "NAME",
-                                                        "ward" = "WARD",
-                                                        "community" = "COMMUNITY",
-                                                        "facility_type" = "TYPE",
-                                                        "facility_ID" = "FACILITY_ID"))
+                                                        "serial_ID" = "ID#"))
     if (nrow(current_facilities_serial_added) > 0) {
         break_data_grid_print(current_facilities_serial_added, title)
     }

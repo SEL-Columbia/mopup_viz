@@ -30,21 +30,7 @@ length_fix <- function(df){
     
     return(df)    
 }
-nmis_length_fix <- function(df){
-    df$facility_name <- ifelse( (str_length(df$facility_name) <= 50),
-                       str_length(df$facility_name),
-                       substr(df$facility_name, 1, 50))
-    
-    df$ward <- ifelse( (str_length(df$ward) <= 20),
-                       str_length(df$ward),
-                       substr(df$ward, 1, 20))
-    
-    df$community <- ifelse( (str_length(df$community) <= 20),
-                            str_length(df$community),
-                            substr(df$community, 1, 20))
-    
-    return(df)    
-}
+
 #### REVALUE
 edu_type_revalue <- c("adult_ed"="Adult", "adult_lit"="Adult", 
                       "adult_vocational"="Adult", "js"="JS", "js_ss"="JS + SS", 
@@ -97,13 +83,14 @@ renamelist_nmis <- c("facility_ID" = "UID", "facility_name" = "NAME",
 nmis_edu <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/nmis/data_774/Education_774_NMIS_Facility.csv")
 nmis_edu <- cbind(nmis_edu, gps_explode(nmis_edu$gps))
 nmis_edu <- subset(nmis_edu, select=c(names(renamelist_nmis), c("lga_id", "lat", "long")))
-# nmis_edu <- rename(nmis_edu, renamelist_nmis)
-nmis_edu <- nmis_length_fix(nmis_edu)
+nmis_edu <- rename(nmis_edu, renamelist_nmis)
+nmis_edu$TYPE <- revalue(nmis_edu$TYPE, edu_type_revalue)
+nmis_edu <- length_fix(nmis_edu)
 saveRDS(nmis_edu, "data/NMISEducationFacilities.rds")
 
 nmis_health <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/nmis/data_774/Health_774_NMIS_Facility.csv")
 nmis_health <- cbind(nmis_health, gps_explode(nmis_health$gps))
 nmis_health <- subset(nmis_health, select=c(names(renamelist_nmis), c("lga_id", "lat", "long")))
-# nmis_health <- rename(nmis_health, renamelist_nmis)
-nmis_health <- nmis_length_fix(nmis_health)
+nmis_health <- rename(nmis_health, renamelist_nmis)
+nmis_health <- length_fix(nmis_health)
 saveRDS(nmis_health, "data/NMISHealthFacilities.rds")
