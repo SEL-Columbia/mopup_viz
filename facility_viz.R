@@ -284,37 +284,33 @@ lga_viz <- function(lga_data) {
                                            sector, lga_name, df[1,'word']))
         })    
     }
-    timestamp(); cat("Table 1..")
+    
     # PAGE 1: Education facilities that need to be surveyed
     to_be_surveyed(lga_data$missing_edu, "Education", 'A')
-    timestamp(); cat("Table 2..")
+    
     # PAGE 2: Health facilities that need to be surveyed
     to_be_surveyed(lga_data$missing_health, "Health", 'B')
-    timestamp(); cat("Map E..")
+    
     # PAGE 3: OVERVIEW Education
     if (nrow(lga_data$nmis_edu) != 0){
         # print lga level map of current lga
         getting_lga_graph(lga_data$shp_fortified, lga_data$nmis_edu, bbox_data, grid_lines,
                           sprintf("C. Surveyed Education Facilities - %s", lga_name))
         
-        timestamp(); cat("More E maps..")
         # ZOOMED IN MAPS AND TABLES -- EDUCATION
         zoomed_in(lga_data$nmis_edu, "Education")    
     }
     
     
     # PAGE 4: OVERVIEW Health
-    timestamp(); cat("Map H..")
     if (nrow(lga_data$nmis_health) != 0){
     # print lga level map of current lga
     getting_lga_graph(lga_data$shp_fortified, lga_data$nmis_health, bbox_data, grid_lines,
                       sprintf("D. Surveyed Health Facilities - %s", lga_name))
     
-    timestamp(); cat("More H maps..")
     # ZOOMED IN MAPS AND TABLES -- HEALTH
     zoomed_in(lga_data$nmis_health, "Health")
     }
-    timestamp()
 }
 
 # quick fix for handling lga_name like "Abua/Odual" which screws output file
