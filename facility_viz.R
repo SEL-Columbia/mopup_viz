@@ -322,7 +322,8 @@ lga_names_fixer <- function(name){
 
 to_pdf <- function(LGA_ID) {
     lga_data <- get_data_for_current_lga(LGA_ID)
-    pdf(sprintf('pdfs/%s_%s.pdf', LGA_ID, lga_names_fixer(lga_data$name)),
+    BASE_DIR <- "~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/mop_up_viz_output"
+    pdf(sprintf('%s/pdfs/%s_%s.pdf', BASE_DIR, LGA_ID, lga_names_fixer(lga_data$name)),
         width = 11, height = 8.5)
     lga_viz(lga_data)
     dev.off()    
