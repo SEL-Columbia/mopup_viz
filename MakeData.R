@@ -4,11 +4,10 @@ require(plyr)
 require(stringr)
 
 # Creating data folder if it doesn't exist
-
-
-if !(file.exists(data_dir)){
-    DATA_DIR <- "data"
-    BASE_DIR<- getwd()
+DATA_DIR <- "data"
+BASE_DIR<- getwd()
+if (!file.exists(file.path(BASE_DIR, DATA_DIR))){
+    
     dir.create(file.path(BASE_DIR, DATA_DIR))
 }
 
