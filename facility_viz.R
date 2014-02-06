@@ -232,26 +232,26 @@ facility_get_serial_ID <- function(fac, DIST_THRESHOLD=0.0012) {
     
     fac$serial_ID <- 1:nrow(fac)
     
-    #### FIND THE CLOSEST FACILITY
-    nn <- nn2(fac[c("lat", "long")], k=2)
-    fac$serial_ID.y <- nn$nn.idx[,2] # first neighbor is self
-    fac$dist <- nn$nn.dist[,2]
-    
-    #### COMBINE IDS for CLOSE FACILITIES
-    idx <- which(fac$dist < DIST_THRESHOLD)
-    for (i in idx){
-        id <- which(fac$serial_ID == fac$serial_ID.y[i])
+    if (nrow(fac) > 1){
+        #### FIND THE CLOSEST FACILITY
+        nn <- nn2(fac[c("lat", "long")], k=2)
+        fac$serial_ID.y <- nn$nn.idx[,2] # first neighbor is self
+        fac$dist <- nn$nn.dist[,2]
         
-        fac$serial_ID[id] <- fac$serial_ID[i]
-        fac$serial_ID.y[idx][which(fac$serial_ID.y[idx] == fac$serial_ID.y[i])] <- fac$serial_ID[i]
+        #### COMBINE IDS for CLOSE FACILITIES
+        idx <- which(fac$dist < DIST_THRESHOLD)
+        for (i in idx){
+            id <- which(fac$serial_ID == fac$serial_ID.y[i])
+            
+            fac$serial_ID[id] <- fac$serial_ID[i]
+            fac$serial_ID.y[idx][which(fac$serial_ID.y[idx] == fac$serial_ID.y[i])] <- fac$serial_ID[i]
+        }
+        fac[idx,'serial_ID'] <- paste0(fac[idx,'serial_ID'], "*")
+        
+        # calling internal function to get result
+        fac <- subset(fac, select= -c(serial_ID.y))    
     }
-    fac[idx,'serial_ID'] <- paste0(fac[idx,'serial_ID'], "*")
-    
-    # calling internal function to get result
-    fac <- subset(fac, select= -c(serial_ID.y))
-    
     return(fac)    
-    
 }
 
 # Creating master function to plot lga overview + zoomin level all at once
