@@ -3,6 +3,16 @@ require(ggplot2)
 require(plyr)
 require(stringr)
 
+# Creating data folder if it doesn't exist
+
+
+if !(file.exists(data_dir)){
+    DATA_DIR <- "data"
+    BASE_DIR<- getwd()
+    dir.create(file.path(BASE_DIR, DATA_DIR))
+}
+
+# load data
 wgs84 <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 nga_shp <- readShapeSpatial("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/raw_data/nga_lgas/nga_lgas_with_corrected_id.shp", proj4string=wgs84)
 
@@ -61,6 +71,9 @@ missing_health <- rename(missing_health, renamelist_missing)
 
 missing_edu <- length_fix(missing_edu)
 missing_health <- length_fix(missing_health)
+
+missing_edu$UID <- substr(missing_edu$UID, start=3,7)
+missing_health$UID <- substr(missing_health$UID, start=3,7)
 
 saveRDS(missing_edu, "data/MissingEducationFacilities.rds")
 saveRDS(missing_health, "data/MissingHealthFacilities.rds")
