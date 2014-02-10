@@ -9,6 +9,6 @@ How to RUN the map generating script
  * It should create a /data folder in the cloned folder.
  * It pulls raw data from Dropbox and print pdfs to Dropbox.
  * It is going to take a couple of hours to finish printing the pdfs, but I'm not going to try to make it faster for now.
-3. Reach out to Zaiming, in case you have trouble runing the script.
+3. Reach out to Zaiming, in case you still have trouble runing the script.
  
 
