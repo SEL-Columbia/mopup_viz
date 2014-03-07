@@ -74,6 +74,21 @@ missing_health <- length_fix(missing_health)
 missing_edu$UID <- substr(missing_edu$UID, start=3,7)
 missing_health$UID <- substr(missing_health$UID, start=3,7)
 
+### Load finished mopup facility and remove those from missing list
+edu_finished <- readRDS("data/edu_finished_mop.RDS")
+edu_finished <- unique(edu_finished$facility_ID)
+
+health_finished <- readRDS("data/health_finished_mop.RDS")
+health_finished <- unique(health_finished$facility_ID)
+
+# remove surveyed facility 
+missing_edu <- subset(missing_edu, ! missing_edu$UID %in% edu_finished)
+missing_health <- subset(missing_health, ! missing_health$UID %in% health_finished)
+
+# adding date of survey column to missing list
+missing_edu$Date_of_Survey <- "    "
+missing_health$Date_of_Survey <- "    "
+
 saveRDS(missing_edu, "data/MissingEducationFacilities.rds")
 saveRDS(missing_health, "data/MissingHealthFacilities.rds")
 
@@ -91,7 +106,7 @@ renamelist_nmis <- c("facility_ID" = "UID", "facility_name" = "NAME",
                         "facility_type" = "TYPE",
                         "ward" = "WARD", "community" = "COMMUNITY")
 
-nmis_edu <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/nmis/data_774/Education_774_NMIS_Facility.csv",
+nmis_edu <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/nmis/data_774/final_output/Education_774_NMIS_Facility.csv",
                      stringsAsFactors=FALSE)
 nmis_edu <- cbind(nmis_edu, gps_explode(nmis_edu$gps))
 nmis_edu <- subset(nmis_edu, select=c(names(renamelist_nmis), c("lga_id", "lat", "long")))
@@ -100,7 +115,7 @@ nmis_edu$TYPE <- revalue(nmis_edu$TYPE, edu_type_revalue)
 nmis_edu <- length_fix(nmis_edu)
 saveRDS(nmis_edu, "data/NMISEducationFacilities.rds")
 
-nmis_health <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/nmis/data_774/Health_774_NMIS_Facility.csv",
+nmis_health <- read.csv("~/Dropbox/Nigeria/Nigeria 661 Baseline Data Cleaning/in_process_data/nmis/data_774/final_output/Health_774_NMIS_Facility.csv",
                         stringsAsFactors=FALSE)
 nmis_health <- cbind(nmis_health, gps_explode(nmis_health$gps))
 nmis_health <- subset(nmis_health, select=c(names(renamelist_nmis), c("lga_id", "lat", "long")))
