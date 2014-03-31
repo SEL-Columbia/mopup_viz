@@ -68,6 +68,8 @@ missing_health <- subset(missing_health,
 missing_edu <- rename(missing_edu, renamelist_missing)
 missing_health <- rename(missing_health, renamelist_missing)
 
+missing_edu$UID <- toupper(missing_edu$UID)
+missing_health$UID <- toupper(missing_health$UID)
 missing_edu <- length_fix(missing_edu)
 missing_health <- length_fix(missing_health)
 
