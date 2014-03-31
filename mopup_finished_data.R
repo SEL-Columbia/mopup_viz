@@ -26,5 +26,5 @@ edu_mopup <- subset(edu_mopup, edu_mopup$facility_ID !=  "xxxx" &
 health_mopup <- subset(health_mopup, health_mopup$facility_ID !=  "xxxx" &
                                     !str_detect(health_mopup$facility_ID, "[0-9]")) 
 
-saveRDS(edu_mopup, "~/work/r/mopup_viz/data/edu_finished_mop.RDS")
-saveRDS(health_mopup, "~/work/r/mopup_viz/data/health_finished_mop.RDS")
+saveRDS(edu_mopup, "data/edu_finished_mop.RDS")
+saveRDS(health_mopup, "data/health_finished_mop.RDS")
