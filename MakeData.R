@@ -2,6 +2,7 @@ require(maptools)
 require(ggplot2)
 require(plyr)
 require(stringr)
+require(formhub)
 
 # Creating data folder if it doesn't exist
 DATA_DIR <- "data"
