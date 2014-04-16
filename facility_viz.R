@@ -320,7 +320,7 @@ lga_names_fixer <- function(name){
 
 to_pdf <- function(LGA_ID) {
     lga_data <- get_data_for_current_lga(LGA_ID)    
-    pdf(sprintf('%s/pdfs/%s_%s.pdf', BASE_DIR, LGA_ID, lga_names_fixer(lga_data$name)),
+    pdf(sprintf('%s/pdfs/facility_lists_V2/%s_%s.pdf', BASE_DIR, LGA_ID, lga_names_fixer(lga_data$name)),
         width = 12.5, height = 8.5)
     lga_viz(lga_data)
     dev.off()    

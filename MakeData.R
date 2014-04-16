@@ -77,10 +77,14 @@ missing_edu$UID <- substr(missing_edu$UID, start=3,7)
 missing_health$UID <- substr(missing_health$UID, start=3,7)
 
 ### Load finished mopup facility and remove those from missing list
-edu_finished <- readRDS("data/edu_finished_mop.RDS")
+edu_finished <- formhubDownload(formName="mopup_questionnaire_education_final",
+                                uname="ossap", pass="777lgas", 
+                                na.strings=c(999,"n/a","dn"), keepGroupNames=FALSE)
 edu_finished <- unique(edu_finished$facility_ID)
 
-health_finished <- readRDS("data/health_finished_mop.RDS")
+health_finished <- formhubDownload(formName="mopup_questionnaire_health_final",
+                                uname="ossap", pass="777lgas", 
+                                na.strings=c(999,"n/a","dn"), keepGroupNames=FALSE)
 health_finished <- unique(health_finished$facility_ID)
 
 # remove surveyed facility 
