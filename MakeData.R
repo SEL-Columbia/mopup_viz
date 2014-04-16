@@ -81,11 +81,13 @@ edu_finished <- formhubDownload(formName="mopup_questionnaire_education_final",
                                 uname="ossap", pass="777lgas", 
                                 na.strings=c(999,"n/a","dn"), keepGroupNames=FALSE)
 edu_finished <- unique(edu_finished$facility_ID)
+edu_finished <- toupper(edu_finished)
 
 health_finished <- formhubDownload(formName="mopup_questionnaire_health_final",
                                 uname="ossap", pass="777lgas", 
                                 na.strings=c(999,"n/a","dn"), keepGroupNames=FALSE)
 health_finished <- unique(health_finished$facility_ID)
+health_finished <- toupper(health_finished)
 
 # remove surveyed facility 
 missing_edu <- subset(missing_edu, ! missing_edu$UID %in% edu_finished)
